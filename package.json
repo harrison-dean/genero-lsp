@@ -1,0 +1,21 @@
+{
+  "name": "genero-lsp",
+  "version": "1.0.0",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js --stdio"
+  },
+  "dependencies": {
+    "@types/node": "^12.20.55",
+    "ajv": "^6.12.6",
+    "ajv-formats": "^2.1.1",
+    "vscode-jsonrpc": "^4.0.0",
+    "vscode-languageserver": "^7.0.0",
+    "vscode-languageserver-protocol": "^3.17.5",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "devDependencies": {
+    "typescript": "^3.9.7"
+  }
+}
