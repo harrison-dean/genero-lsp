@@ -1,5 +1,5 @@
 {
- /* "$schema": "./GeneroPackageSchema.json",*/
+  "$schema": "./GeneroPackageSchema.json",
   "name": "dataTypes",
   "type": "built-in",
   "description": "Built-in classes for BDL data types",

@@ -8,7 +8,8 @@ import {
   CompletionItem,
   CompletionItemKind,
   Hover,
-  Diagnostic,
+  Range,
+  Diagnostic as LSPDiagnostic,
   DiagnosticSeverity,
   TextEdit
 } from 'vscode-languageserver/node';
@@ -17,7 +18,7 @@ import keywords from './resources/4GLKeywords.json';
 import types from './resources/built-in_dataTypes.4GLPackage.json';
 import packages from './resources/built-in_ui.4GLPackage.json';
 import { compileSchema } from './schemaLoader';
-import { compileGeneroFile } from './compileGeneroFile';
+import { compileFile } from './compileGeneroFile';
 
 
 
@@ -83,54 +84,15 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
         resolveProvider: true
       },
       hoverProvider: true,
-      documentFormattingProvider: true
+      documentFormattingProvider: true,
     }
   };
 });
 
 documents.onDidChangeContent(change => {
-  validateTextDocument(change.document);
+  // validateTextDocument(change.document);
 });
 
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  const filePath = textDocument.uri.replace('file://', '');
-  try {
-    const output = await compileGeneroFile(filePath);
-    const diagnostics: Diagnostic[] = parseCompilerOutput(output, textDocument);
-    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-  } catch (error) {
-    const diagnostics: Diagnostic[] = parseCompilerOutput(error, textDocument);
-    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-  }
-}
-
-function parseCompilerOutput(output: string, textDocument: TextDocument): Diagnostic[] {
-  const diagnostics: Diagnostic[] = [];
-  const lines = output.split('\n');
-  for (const line of lines) {
-    const match = /(.+):(\d+):(\d+):(\d+):(\d+):(warning|error):\((-\d+)\) (.+)/.exec(line);
-    if (match) {
-      const [, file, startLineStr, startCharStr, endLineStr, endCharStr, severityStr, code, message] = match;
-      const startLine = parseInt(startLineStr, 10) - 1;
-      const startChar = parseInt(startCharStr, 10) - 1;
-      const endLine = parseInt(endLineStr, 10) - 1;
-      const endChar = parseInt(endCharStr, 10) - 1;
-      const severity = severityStr === 'warning' ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error;
-      const diagnostic: Diagnostic = {
-        severity,
-        range: {
-          start: { line: startLine, character: startChar },
-          end: { line: endLine, character: endChar }
-        },
-        message,
-        source: 'fglcomp',
-        code
-      };
-      diagnostics.push(diagnostic);
-    }
-  }
-  return diagnostics;
-}
 
 connection.onCompletion((): CompletionItem[] => {
   return keywords.map((keyword: { name: string; type?: string }) => ({
@@ -140,6 +102,65 @@ connection.onCompletion((): CompletionItem[] => {
     documentation: keyword.type ? `Type: ${keyword.type}` : 'No additional information'
   }));
 });
+
+interface Diagnostic {
+  filePath: string;
+  startLine: number;
+  startColumn: number;
+  endLine: number;
+  endColumn: number;
+  severity: 'warning' | 'error';
+  code: string;
+  message: string;
+}
+
+function parseDiagnostics(output: string): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const lines = output.split('\n');
+  const regex = /^(.*):(\d+):(\d+):(\d+):(\d+):(warning|error):\((-\d+)\) (.*)$/;
+
+  for (const line of lines) {
+    const match = line.match(regex);
+    if (match) {
+      diagnostics.push({
+        filePath: match[1],
+        startLine: parseInt(match[2], 10),
+        startColumn: parseInt(match[3], 10),
+        endLine: parseInt(match[4], 10),
+        endColumn: parseInt(match[5], 10),
+        severity: match[6] as 'warning' | 'error',
+        code: match[7],
+        message: match[8],
+      });
+    }
+  }
+
+  return diagnostics;
+}
+
+documents.onDidSave(async (change) => {
+  const fileUri = change.document.uri;
+  try {
+    const output = await compileFile(fileUri);
+    const diagnostics = parseDiagnostics(output);
+
+    const lspDiagnostics: LSPDiagnostic[] = diagnostics.map(diag => ({
+      range: {
+        start: { line: diag.startLine - 1, character: diag.startColumn - 1 },
+        end: { line: diag.endLine - 1, character: diag.endColumn - 1 }
+      },
+      severity: diag.severity === 'warning' ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error,
+      code: diag.code,
+      source: 'fglcomp',
+      message: diag.message,
+    }));
+
+    connection.sendDiagnostics({ uri: fileUri, diagnostics: lspDiagnostics });
+  } catch (error) {
+    connection.console.error(`Error compiling file: ${error}`);
+  }
+});
+
 
 connection.onHover((params): Hover | null => {
   const { textDocument, position } = params;
