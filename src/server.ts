@@ -26,6 +26,7 @@ const perKeywords = perKeywordsData.keywords; // Extract nested array
 
 import types from './resources/built-in_dataTypes.4GLPackage.json';
 import packages from './resources/built-in_ui.4GLPackage.json';
+
 import { compileSchema } from './schemaLoader';
 import { compileFile } from './compileGeneroFile';
 import { searchFunctionDefinition } from "./findFunctionDefinition";
@@ -159,14 +160,14 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
 	};
 });
 
-connection.onCompletion((textDocumentPosition): CompletionItem[] => {
+connection.onCompletion(async(textDocumentPosition): Promise<CompletionItem[]> => {
 	const uri = textDocumentPosition.textDocument.uri;
 	const isPerFile = uri.endsWith('.per');
 
 	// Get the appropriate keyword list with type safety
 	const activeKeywords: GeneroKeyword[] = isPerFile ? perKeywords : fourGlKeywords;
-
 	
+	// get keyword autocompletions
 	const keywordItems = activeKeywords.map((keyword: GeneroKeyword) => ({
 		label: keyword.name,
 		kind: CompletionItemKind.Keyword,
@@ -174,6 +175,7 @@ connection.onCompletion((textDocumentPosition): CompletionItem[] => {
 	documentation: keyword.description || undefined
 	}));
 	
+	// get local function autocompletions
 	const functions = functionCache.get(uri) || [];
 	const functionItems = functions.map(func => ({
 		label: func,
@@ -181,8 +183,55 @@ connection.onCompletion((textDocumentPosition): CompletionItem[] => {
 		detail: 'Local function',
 	}));
 
+	// TODO - make work
+	// get built in method autocompletions
+	// const doc = documents.get(uri);
+	// if (doc) {
+	// 	// 1. Get variable type at cursor position (using your existing function)
+	// 	const varType = await findTypeDefinition(doc, textDocumentPosition.position);
+	// 	if (varType) {
+	// 		// 2. Check if user is typing after a dot (method access)
+	// 		const lineText = doc.getText({
+	// 			start: {line: textDocumentPosition.position.line, character: 0},
+	// 			end: textDocumentPosition.position
+	// 		});
+	// 		if (lineText.endsWith('.')) {
+	// 			// 3. Get methods for the variable type
+	// 			const methods = methodMap.get(varType) || [];
+	//
+	// 			const methodItems = methods.map(method => ({
+	// 				label: method.name,
+	// 				kind: CompletionItemKind.Method,
+	// 				// detail: this.getMethodSignature(method),
+	// 				documentation: {
+	// 				kind: "markup"
+	// 				// value: this.getMethodDocumentation(method)
+	// 				}
+	// 			}));
+	// 			return methodItems;
+	// 		}
+	// 	}
+	// }
+
+	// TODO - make work
+	// Get function completions
+	// const functionCompletions = functionDefinitions.map(fn => ({
+	// 	label: fn.name,
+	// 	kind: CompletionItemKind.Function,
+	// 	detail: `Function from ${path.basename(fn.file)}`,
+	// 	documentation: {
+	// 		kind: "markup",
+	// 		value: [
+	// 		`**${fn.name}**`,
+	// 		...fn.parameters.map(p => `- _Param_ \`${p.name}\`: ${p.type}`),
+	// 		...fn.returns.map(r => `- _Returns_ \`${r.type}\``)
+	// 		].join('\n')
+	// 	}
+	// }));
+
 	return [
 	...keywordItems,
+	// ...functionCompletions,
 	...functionItems
 	];
 });
@@ -196,7 +245,8 @@ connection.onHover(async (params: TextDocumentPositionParams): Promise<Hover | n
 	const offset = document.offsetAt(params.position);
 	const functionPattern = /\b\w+\s*\([^)]*\)/g;
 	const wordRange = getWordRangeAtPosition(text, offset, functionPattern);
-	logger.log("wordRange = " + wordRange)
+
+	// getVariableTypeAtPosition(document, params.position)
 
 	if (wordRange) {
 		const functionCall = text.slice(wordRange.start, wordRange.end);
@@ -222,7 +272,7 @@ connection.onHover(async (params: TextDocumentPositionParams): Promise<Hover | n
 			return null;
 		}
 
-		const typeDefinition = findTypeDefinition(document, params.position, word);
+		const typeDefinition = findTypeDefinition(document, params.position);
 		if (!typeDefinition) {
 			return null;
 			}
@@ -347,7 +397,6 @@ function parseFunctionDefinition(filePath: string, line: number): string | null 
 
 	for (let i = line - 1; i < lines.length; i++) {
 		const line = lines[i];
-	// logger.log("line: " + line)
 		functionLines.push(line);
 	const endFuncPattern = /^END\s+FUNCTION\s*/
 		if (endFuncPattern.exec(line)) {
@@ -364,8 +413,8 @@ function parseFunctionDefinition(filePath: string, line: number): string | null 
 			const params = match[2].split(',').map(param => param.trim());
 			const paramTypes = parseParamTypes(functionText);
 			const paramInfo = params.map(param => `${param}: ${paramTypes[param] || 'unknown'}`).join(', ');
-		const fileName = path.basename(filePath);
-			return `**File:** ${fileName}\n**Function:** ${match[1]}\n**Parameters:** ${paramInfo}`;
+			const fileName = path.basename(filePath);
+			return `**Source:** ${fileName}\n**Function:** ${match[1]}\n**Parameters:** ${paramInfo}`;
 		}
 	}
 
@@ -374,8 +423,8 @@ function parseFunctionDefinition(filePath: string, line: number): string | null 
 
 function parseParamTypes(functionText: string): { [param: string]: string } {
 	const paramTypes: { [param: string]: string } = {};
-	const definePattern = /DEFINE\s+(\w+)\s+(.*)/g;
-	// const definePattern = /DEFINE\s+(\w+)\s+((?:.(?!\s*#))*.+?)\s*(?:#.*)?$/gim;
+	// const definePattern = /DEFINE\s+(\w+)\s+(.*)/g;
+	const definePattern = /DEFINE\s+(\w+)\s+((?:.(?!\s*#))*.+?)\s*(?:#.*)?$/gim;
 	let match;
 	while ((match = definePattern.exec(functionText)) !== null) {
 		paramTypes[match[1]] = match[2];
@@ -389,7 +438,13 @@ function getFunctionInfoFromFile(text: string, functionName: string): string | n
 	const match = functionDefPattern.exec(text);
 	if (match) {
 		const params = match[1].split(',').map(param => param.trim());
-		return `**Function:** ${functionName}\n\n**Parameters:** ${params.join(', ')}`;
+		let paramStr: string = params.join(", ");
+		let functionInfo: string = `**Function:** ${functionName}\n`;
+		if (paramStr.length < 1) {
+			paramStr = "None"
+		}
+		functionInfo = functionInfo + `**Parameters:** ${paramStr}`
+		return functionInfo;
 	}
 	return null;
 }
@@ -415,7 +470,8 @@ function getWordAtPosition(document: TextDocument, position: Position): string |
 
 	return word || null;
 }
-function findTypeDefinition(document: TextDocument, position: Position, word: string): string | null {
+function findTypeDefinition(document: TextDocument, position: Position): string | null {
+	const word = getWordAtPosition(document, position);
 	for (let line = position.line; line >= 0; line--) {
 		const text = document.getText({
 			start: { line, character: 0 },

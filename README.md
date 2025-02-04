@@ -1,3 +1,5 @@
+An LSP for the Genero language
+
 Features:
 * Diagnostics on document open/save
 * Autocompletion suggestions for keywords (4GL and PER)
