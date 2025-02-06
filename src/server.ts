@@ -1,5 +1,6 @@
 import {
 	CodeAction,
+	Hover,
 	TextDocuments, 
 	createConnection, 
 	ProposedFeatures,
@@ -8,6 +9,7 @@ import {
 	CompletionItem,
 	InitializeResult,
 	InitializeParams,
+	TextDocumentPositionParams,
 	Diagnostic,
 } from 'vscode-languageserver/node';
 
@@ -15,9 +17,8 @@ import { TextDocument, Position } from 'vscode-languageserver-textdocument';
 import { DocumentManager } from './lib/documentManager';
 import { CompletionProvider } from './providers/completion';
 import { DiagnosticsProvider } from './providers/diagnostics';
-import { Logger } from "./logger";
-import { createRemoveTrailingWhitespaceAction } from "./providers/codeActions";
 import { CodeActionsProvider } from "./providers/codeActions";
+import { Logger } from "./logger";
 
 // Create connection
 const connection = createConnection(ProposedFeatures.all);
@@ -83,29 +84,20 @@ connection.onCompletion(async(textDocumentPosition): Promise<CompletionItem[]> =
 	return completionProvider.provideCompletions(textDocumentPosition.textDocument.uri);
 });
 
+
+connection.onHover(async (params: TextDocumentPositionParams): Promise<Hover | null> => {
+	const document = documents.get(params.textDocument.uri);
+	if (!document) return null;
+
+	return null;
+})
+
 connection.onCodeAction((params) => {
 	const { textDocument, range, context } = params;
 	const doc = documents.get(textDocument.uri);
 	if (!doc) return [];
+	return codeActionsProvider.provideCodeActions(textDocument.uri);
 
-	const codeActions: CodeAction[] = [];
-
-	// Check if the diagnostic is for trailing whitespace
-	const fileStructure = documentManager.getStructure(textDocument.uri);
-	if (!fileStructure) { return };
-	const diagnostics = fileStructure.diagnostics;
-	diagnostics.forEach(diagnostic => {
-		if (diagnostic.code === "style/trailing-whitespace") {
-			const action = createRemoveTrailingWhitespaceAction(
-				diagnostic.range,
-				textDocument.uri
-			);
-			action.diagnostics = [diagnostic]; // Link the action to the diagnostic
-			codeActions.push(action);
-		}
-	});
-
-	return codeActions;
 });
 
 documents.listen(connection);
