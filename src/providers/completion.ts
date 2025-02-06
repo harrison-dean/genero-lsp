@@ -74,21 +74,30 @@ export class CompletionProvider {
 	}
 
 	private getVariableCompletions(structure: FileStructure): CompletionItem[] {
-	// Combine global and function-scoped variables using reduce
-	const allVars = structure.functions.reduce<VariableDef[]>(
-		(acc, fn) => acc.concat(fn.variables),
-		[...structure.variables]
-	);
-
-	return allVars.map(v => ({
-		label: v.name,
-		kind: CompletionItemKind.Variable,
-		detail: `Variable: ${v.name} (${v.type})`,
-		documentation: {
-		kind: MarkupKind.Markdown,
-		value: `**Scope:** ${v.scope}`
-		}
-	}));
+		// Combine global and function-scoped variables using reduce
+		// const allVars = structure.functions.reduce<VariableDef[]>(
+		// 	(acc, fn) => acc.concat(fn.variables),
+		// 	[...structure.variables]
+		// );
+		//
+		// return allVars.map(v => ({
+		// 	label: v.name,
+		// 	kind: CompletionItemKind.Variable,
+		// 	detail: `Variable: ${v.name} (${v.type})`,
+		// 	documentation: {
+		// 	kind: MarkupKind.Markdown,
+		// 	value: `**Scope:** ${v.scope}`
+		// 	}
+		// }));
+		return structure.variables.map(fn => ({
+			label: fn.name,
+			kind: CompletionItemKind.Variable,
+			detail: `Variable: ${fn.name} (${fn.type})`,
+			documentation: {
+				kind: MarkupKind.Markdown,
+				value: `**Scope:** ${fn.scope}`
+			}
+		}))
 	}
 
 	// private getRecordFieldCompletions(linePrefix: string, uri: string): CompletionItem[] {

@@ -5,6 +5,16 @@ import {
 	Range 
 } from 'vscode-languageserver';
 
+import { DocumentManager } from "../lib/documentManager";
+import { Logger } from "../logger";
+
+// logger
+const logger = Logger.getInstance("hd.log");
+
+export class CodeActionsProvider {
+	constructor(private documentManager: DocumentManager) {}
+
+}
 export function createRemoveTrailingWhitespaceAction(
   range: Range,
   documentUri: string

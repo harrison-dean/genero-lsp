@@ -17,6 +17,7 @@ import { CompletionProvider } from './providers/completion';
 import { DiagnosticsProvider } from './providers/diagnostics';
 import { Logger } from "./logger";
 import { createRemoveTrailingWhitespaceAction } from "./providers/codeActions";
+import { CodeActionsProvider } from "./providers/codeActions";
 
 // Create connection
 const connection = createConnection(ProposedFeatures.all);
@@ -26,6 +27,7 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 const documentManager = new DocumentManager();
 const completionProvider = new CompletionProvider(documentManager);
 const diagnosticsProvider = new DiagnosticsProvider(documentManager);
+const codeActionsProvider = new CodeActionsProvider(documentManager);
 
 // logger
 const logger = Logger.getInstance("hd.log");

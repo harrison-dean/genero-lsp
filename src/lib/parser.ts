@@ -57,7 +57,7 @@ export class FileParser {
 			}
 
 			// Parse variable definitions
-			const varMatch = line.match(/^DEFINE\s+(\w+)\s+([\w.]+)/i);
+			const varMatch = line.trim().match(/^DEFINE\s+(\w+)\s+([\w.]+)/i);
 			if (varMatch) {
 				const variable = {
 					name: varMatch[1],
