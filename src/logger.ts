@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export class Logger {
+	private doLog: boolean = false;
     private static instance: Logger;
     private logFilePath: string;
 
@@ -17,6 +18,7 @@ export class Logger {
     }
 
     public log(message: string): void {
+		if (!this.doLog) return
         const timestamp = new Date().toISOString();
         const logMessage = `${timestamp} - ${message}\n`;
         fs.appendFile(this.logFilePath, logMessage, (err) => {
