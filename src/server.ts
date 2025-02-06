@@ -45,6 +45,12 @@ documents.onDidOpen(async({ document }) => {
 documents.onDidChangeContent(async({ document }) => {
 	logger.log("In onDidChangeContent()")
 	documentManager.updateDocument(document.uri, document.getText());
+
+	// send diagnostics from filestructure
+	const struct = documentManager.getStructure(document.uri);
+	if (struct) {
+		connection.sendDiagnostics({uri:document.uri, diagnostics: struct.diagnostics})
+	}
 });
 
 // listen for doc saves
