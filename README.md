@@ -6,6 +6,8 @@ Features:
 * Autocompletion for local function names
 * Autocompletion for variable names
 * Hover information for functions (params) and variables (type and scope)
+* Asynchronous style hinting via diagnostics e.g. empty lines, trailing whitespace
+* Code actions
 
 To do:
 * Autocompletion for all available functions (parse .m3 files) ?
