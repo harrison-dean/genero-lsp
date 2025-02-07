@@ -18,6 +18,7 @@ import { DocumentManager } from './lib/documentManager';
 import { CompletionProvider } from './providers/completion';
 import { DiagnosticsProvider } from './providers/diagnostics';
 import { CodeActionsProvider } from "./providers/codeActions";
+import { HoverProvider } from "./providers/hover";
 import { Logger } from "./logger";
 
 // Create connection
@@ -29,6 +30,7 @@ const documentManager = new DocumentManager();
 const completionProvider = new CompletionProvider(documentManager);
 const diagnosticsProvider = new DiagnosticsProvider(documentManager);
 const codeActionsProvider = new CodeActionsProvider(documentManager);
+const hoverProvider = new HoverProvider(documentManager);
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -50,7 +52,8 @@ documents.onDidChangeContent(async({ document }) => {
 	// send diagnostics from filestructure
 	const struct = documentManager.getStructure(document.uri);
 	if (struct) {
-		connection.sendDiagnostics({uri:document.uri, diagnostics: struct.diagnostics})
+		// NOTE: this provides live style-related diagnostics but tends to double up diagnostics..
+		// connection.sendDiagnostics({uri:document.uri, diagnostics: struct.diagnostics})
 	}
 });
 
@@ -85,11 +88,11 @@ connection.onCompletion(async(textDocumentPosition): Promise<CompletionItem[]> =
 });
 
 
-connection.onHover(async (params: TextDocumentPositionParams): Promise<Hover | null> => {
+connection.onHover(async (params: TextDocumentPositionParams): Promise<Hover| null> => {
 	const document = documents.get(params.textDocument.uri);
 	if (!document) return null;
 
-	return null;
+	return hoverProvider.provideHover(document, params);
 })
 
 connection.onCodeAction((params) => {

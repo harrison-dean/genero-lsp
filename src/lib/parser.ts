@@ -71,7 +71,7 @@ export class FileParser {
 				} else {
 					structure.variables.push(variable);
 				}
-				return;
+				// return;
 			}
 
 			// Parse record definitions

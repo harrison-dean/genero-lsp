@@ -29,11 +29,10 @@ export class CodeActionsProvider {
 		const codeActions: CodeAction[] = [];
 		const diagnostics = structure.diagnostics;
 		diagnostics.forEach(diagnostic => {
-			if (diagnostic.code === "style/trailing-whitespace") {
-				const action = this.createRemoveTrailingWhitespaceAction(
-					diagnostic.range,
-					uri
-				);
+			if ((diagnostic.code === "style/trailing-whitespace") || 
+				(diagnostic.code === "style/empty-line")) {
+				
+				const action = this.createDelRangeAction(diagnostic.range, uri, diagnostic.code);
 				action.diagnostics = [diagnostic]; // Link the action to the diagnostic
 				codeActions.push(action);
 			}
@@ -42,22 +41,18 @@ export class CodeActionsProvider {
 	return codeActions;
 	}
 
-	createRemoveTrailingWhitespaceAction(
-	range: Range,
-	documentUri: string
-	): CodeAction {
-	return {
-		title: "Remove trailing whitespace",
-		kind: CodeActionKind.QuickFix,
-		diagnostics: [], // Will be populated later
-		edit: {
-		changes: {
-			[documentUri]: [
-			TextEdit.del(range) // Delete the trailing whitespace
-			]
-		}
-		}
-	};
+	createDelRangeAction(range: Range, documentUri: string, code: string): CodeAction {
+		return {
+			title: code,	// TODO: cut off "style/" prefix
+			kind: CodeActionKind.QuickFix,
+			diagnostics: [], // Will be populated later
+			edit: {
+				changes: {
+					[documentUri]: [
+						TextEdit.del(range) // Delete the trailing whitespace
+					]
+				}
+			}
+		};
 	}
-
 }
