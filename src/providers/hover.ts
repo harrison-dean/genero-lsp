@@ -24,7 +24,7 @@ export class HoverProvider {
 		logger.log("word: " + word);
 		if (!word) return null;
 	
-		const hoverContent = this.findDefinitionInFileStructure(word, struct);
+		const hoverContent = this.findDefinitionInFileStructure(word, struct, params.position);
 		if (!hoverContent) return null;
 		// Return the hover content
 		return {
@@ -54,45 +54,59 @@ export class HoverProvider {
 		return null;
 	}
 	
-	findDefinitionInFileStructure(word: string, structure: FileStructure) {
+	findDefinitionInFileStructure(word: string, structure: FileStructure, position: Position) {
+		if (!structure) return null;
 		const functionMatch = structure.functions.find(fn => fn.name === word);
-	if (functionMatch) {
-		return {
-		content: `**Function**: ${functionMatch.name}\n` +
-				`**Parameters**: ${functionMatch.parameters.map(p => `${p.name}: ${p.type}`).join(', ')}\n` +
-				`**Returns**: ${functionMatch.returns[0]?.type || 'void'}`
-		};
-	}
+		const curFunc: string | null = this.findCurrentFunction(structure, position.line + 1);
 
-	// Check variables (global + function-scoped)
-	const allVariables = structure.functions.reduce<VariableDef[]>(
-		(acc, fn) => acc.concat(fn.variables),
-		[...structure.variables] // Start with global variables
-	);
-
-	const variableMatch = allVariables.find(v => v.name === word);
-	if (variableMatch) {
-		let scopeStr: string = `**Scope**: ${variableMatch.scope}`
-		if (variableMatch.scope === "modular") {
-			scopeStr = "";
+		if (functionMatch) {
+			return {
+			content: `**Function**: ${functionMatch.name}\n` +
+					`**Parameters**: ${functionMatch.parameters.map(p => `${p.name}: ${p.type}`).join(', ')}\n` +
+					`**Returns**: ${functionMatch.returns[0]?.type || 'void'}`
+			};
 		}
-		return {
-		content: `**Variable**: ${variableMatch.name}\n` +
-				`**Type**: ${variableMatch.type}\n` +
-				scopeStr
-		};
+
+		// Check variables (global + function-scoped)
+		const allVariables = structure.functions.reduce<VariableDef[]>(
+			(acc, fn) => acc.concat(fn.variables),
+			[...structure.variables] // Start with global variables
+		);
+		
+		// only search variables in this function or modular
+		const variableMatch = allVariables.find(v => v.name === word && (v.scope === curFunc || v.scope === "modular"));
+		if (variableMatch) {
+			let scopeStr: string = `**Scope**: ${variableMatch.scope}`
+			if (variableMatch.scope === "modular") {
+				scopeStr = "";
+			}
+			return {
+			content: `**Type**: ${variableMatch.type}\n` +
+					scopeStr
+			};
+		}
+
+		// Check records
+		const recordMatch = structure.records.find(r => r.name === word);
+		if (recordMatch) {
+			return {
+			content: `**Record**: ${recordMatch.name}\n` +
+					`**Fields**:\n` +
+					recordMatch.fields.map(f => `- ${f.name}: ${f.type}`).join('\n')
+			};
+		}
+
+		return null; // No match found
 	}
 
-	// Check records
-	const recordMatch = structure.records.find(r => r.name === word);
-	if (recordMatch) {
-		return {
-		content: `**Record**: ${recordMatch.name}\n` +
-				`**Fields**:\n` +
-				recordMatch.fields.map(f => `- ${f.name}: ${f.type}`).join('\n')
-		};
-	}
+	findCurrentFunction(structure: FileStructure, lineNumber: number) {
+		// Ensure the functions are sorted by startLine
+		structure.functions.sort((a, b) => a.startLine - b.startLine);
 
-	return null; // No match found
+		// Find the function that includes the lineNumber
+		const curFunc: FunctionDef | undefined = structure.functions.find(func => func.startLine <= lineNumber && func.endLine >= lineNumber);
+		if (!curFunc) return null;
+
+		return curFunc.name
 	}
 }

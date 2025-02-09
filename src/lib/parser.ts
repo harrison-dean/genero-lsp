@@ -28,14 +28,21 @@ export class FileParser {
 
 		let currentFunction: FunctionDef | null = null;
 
+		let indent = 0;
 		lines.forEach((line, lineNumber) => {
 			// line = line.trim();
-			// let indent = 0;
-
+			
+			// increase indent in MAIN
+			if (line.match(/^MAIN/i)) {
+				indent++;
+			}
+			if (line.match(/^END MAIN/i)) {
+				indent--;
+			}
 			// Parse FUNCTION definitions
 			const functionMatch = line.match(/^FUNCTION\s+(\w+)\s*\(([^)]*)\)/i);
 			if (functionMatch) {
-				// indent++;
+				indent++;
 
 				currentFunction = {
 					name: functionMatch[1],
@@ -46,18 +53,18 @@ export class FileParser {
 					endLine: -1
 				};
 				structure.functions.push(currentFunction);
-				return;
 			}
 
 			// Parse END FUNCTION
-			if (/^END\s+FUNCTION/i.test(line) && currentFunction) {
+			if (/^END\s+FUNCTION.*/i.test(line) && currentFunction) {
+				indent--;
 				currentFunction.endLine = lineNumber;
 				currentFunction = null;
-				return;
 			}
 
 			// Parse variable definitions
-			const varMatch = line.trim().match(/^DEFINE\s+(\w+)\s+([\w.]+)/i);
+			const varMatch = line.trim().match(/^DEFINE\s+(\w+)\s+((?:(?!#).)*)/i);
+
 			if (varMatch) {
 				const variable = {
 					name: varMatch[1],
@@ -71,7 +78,6 @@ export class FileParser {
 				} else {
 					structure.variables.push(variable);
 				}
-				// return;
 			}
 
 			// Parse record definitions
@@ -97,16 +103,27 @@ export class FileParser {
 				}
 
 				structure.records.push(record);
-				return;
 			}
 
 			// Parse function calls
 			const callMatch = line.match(/^CALL\s+(\w+)/i);
 			if (callMatch) {
+				// indent++;		// account for RETURNING on next line
 				structure.calls.push({
 					name: callMatch[1],
 					line: lineNumber
 				});
+			}
+
+			// parse THEN statements for indent levels
+			const ifMatch = line.match(/^\s*IF\s*.*THEN\s*$/i);
+			const endIfMatch = line.match(/^\s*END IF/i);
+			if (ifMatch) {
+				indent++;
+				return;
+			}
+			if (endIfMatch) {
+				indent--;
 			}
 
 			// check if line is all spaces or tabs (empty)
@@ -140,6 +157,19 @@ export class FileParser {
 				})
 			}
 
+			// check if current line count of \t(abs) is correct
+			// const realIndentLevel: number = this.countIndentation(line);
+			// if ((realIndentLevel != indent) && (realIndentLevel >= 1)) {
+			// 	structure.diagnostics.push({
+			// 		severity: DiagnosticSeverity.Hint,
+			// 		range: { start: { line: lineNumber, character: line.length },
+			// 				 end: { line: lineNumber, character: line.length }
+			// 		},
+			// 		message: "Incorrect indent level",
+			// 		source: "genero-lsp",
+			// 		code: "style/incorrect-indent",
+			// 	})
+			// }
 		});
 
 		return structure;
@@ -155,6 +185,19 @@ export class FileParser {
 				const [name, type] = p.split(/\s+/);
 				return { name, type: type || 'unknown' };
 			});
+	}
+
+	countIndentation(line: string): number {
+		let tabs = 0;
+		for (const char of line) {
+			if (char === "\t") {
+				tabs++;
+	
+			} else {
+				break;
+			}
+		}
+		return tabs
 	}
 }
 
