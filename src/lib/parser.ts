@@ -3,8 +3,8 @@ import {
 	DiagnosticSeverity,
 } from 'vscode-languageserver/node';
 
-import { FileStructure, FunctionDef } from '../types/genero';
-import { Logger } from "../logger";
+import { FileStructure, FunctionDef, VariableDef } from '../types/genero';
+import { Logger } from "../utils/logger";
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -16,7 +16,7 @@ const logger = Logger.getInstance("hd.log");
 export class FileParser {
 	parse(text: string): FileStructure {
 		logger.log("In parse()")
-		logger.log("text: " + text)
+		// logger.log("text: " + text)
 		const lines = text.split('\n');
 		const structure: FileStructure = {
 			functions: [],
@@ -28,37 +28,114 @@ export class FileParser {
 
 		let currentFunction: FunctionDef | null = null;
 
-		let indent = 0;
+		let correctIndent = 0;
 		lines.forEach((line, lineNumber) => {
 			// line = line.trim();
+			// store a version of this line stripped of comments for ease of parsing
+			const commentlessLine = this.stripComments(line);
+			logger.log("lineNumber=" + lineNumber + "\nline=" + line);
 			
 			// increase indent in MAIN
 			if (line.match(/^MAIN/i)) {
-				indent++;
-			}
-			if (line.match(/^END MAIN/i)) {
-				indent--;
-			}
-			// Parse FUNCTION definitions
-			const functionMatch = line.match(/^FUNCTION\s+(\w+)\s*\(([^)]*)\)/i);
-			if (functionMatch) {
-				indent++;
-
 				currentFunction = {
-					name: functionMatch[1],
-					parameters: this.parseParameters(functionMatch[2]),
+					name: "MAIN",
+					parameters: [],
 					returns: [],
 					variables: [],
 					startLine: lineNumber,
 					endLine: -1
 				};
 				structure.functions.push(currentFunction);
+				correctIndent++;
+			}
+			if (line.match(/^END MAIN/i) && currentFunction) {
+				currentFunction.endLine = lineNumber;
+				currentFunction = null;
+				correctIndent--;
+			}
+			// Parse FUNCTION definitions
+			if (/^FUNCTION\s+/i.test(line)) {
+				let combined = commentlessLine;
+				let index = lineNumber;
+				while (!combined.includes(")") && index < lines.length) {
+					index++;
+					let nextLine = this.stripComments(lines[index]);
+					combined += " " + nextLine.trim();
+				}
+				combined = combined.trim();
+				const functionRegex = /^FUNCTION\s+(\w+)\s*\(([\s\S]*?)\)/i;
+				const match = combined.match(functionRegex)
+				if (match) {
+					index++;
+					
+					currentFunction = {
+						name: match[1],
+						parameters: this.parseParameters(match[2]),
+						returns: [],
+						variables: [],
+						startLine: lineNumber,
+						endLine: -1
+					};
+					structure.functions.push(currentFunction);
+				}
+			}
+			
+			logger.log("currentFunction.name=" + (currentFunction ? currentFunction.name : ""));
+
+	
+			// parse function return value/type
+			if (/RETURN\s+/i.test(commentlessLine)) {
+				logger.log("returnLine");
+				let combined = commentlessLine;
+				let index = lineNumber;
+				while (combined.trim().endsWith(",") && index < lines.length) {
+					index++;
+					const nextLine = this.stripComments(lines[index]);
+					combined += " " + nextLine.trim();
+				}
+				combined = combined.trim();
+				const returnsRegex = /^RETURN\s+(.*)/i;
+				const match = combined.match(returnsRegex);
+				if (match) {
+					const returnVars = match[1].split(",/\s*");
+					returnVars.forEach((v: string) => {
+						if (currentFunction) {
+							logger.log("returnVars: " + returnVars);
+							const variableMatch = structure.variables.find(
+								vm => currentFunction && (vm.name === v && (vm.scope === currentFunction.name))
+							);
+							if (variableMatch) {
+								currentFunction.returns.push({name: variableMatch.name, type: variableMatch.type});
+							}
+						}
+					})
+				}
 			}
 
 			// Parse END FUNCTION
 			if (/^END\s+FUNCTION.*/i.test(line) && currentFunction) {
-				indent--;
+				correctIndent--;
 				currentFunction.endLine = lineNumber;
+			
+				// resolve parameter types from function.variables
+				let cnt = 0
+				currentFunction.parameters.forEach((param) => {
+		
+					const allVariables = structure.functions.reduce<VariableDef[]>(
+						(acc, fn) => acc.concat(fn.variables),
+						[...structure.variables] // Start with global variables
+					);
+					if (currentFunction) {
+						const variableMatch = structure.variables.find(
+							v => currentFunction && (v.name === param.name && (v.scope === currentFunction.name))
+						);
+						if (variableMatch) {
+							currentFunction.parameters[cnt].type = variableMatch.type;
+						}
+					}
+					cnt++;
+				});
+
 				currentFunction = null;
 			}
 
@@ -68,16 +145,16 @@ export class FileParser {
 			if (varMatch) {
 				const variable = {
 					name: varMatch[1],
-					type: varMatch[2],
+					type: varMatch[2].trim(),
 					scope: currentFunction ? currentFunction.name : 'modular',
 					line: lineNumber
 				};
 
+				// add variable to function if in one and file structure
 				if (currentFunction) {
 					currentFunction.variables.push(variable);
-				} else {
-					structure.variables.push(variable);
-				}
+				} 
+				structure.variables.push(variable);
 			}
 
 			// Parse record definitions
@@ -108,7 +185,7 @@ export class FileParser {
 			// Parse function calls
 			const callMatch = line.match(/^CALL\s+(\w+)/i);
 			if (callMatch) {
-				// indent++;		// account for RETURNING on next line
+				// correctIndent++;		// account for RETURNING on next line
 				structure.calls.push({
 					name: callMatch[1],
 					line: lineNumber
@@ -119,11 +196,11 @@ export class FileParser {
 			const ifMatch = line.match(/^\s*IF\s*.*THEN\s*$/i);
 			const endIfMatch = line.match(/^\s*END IF/i);
 			if (ifMatch) {
-				indent++;
-				return;
+				correctIndent++;
+				// return;
 			}
 			if (endIfMatch) {
-				indent--;
+				correctIndent--;
 			}
 
 			// check if line is all spaces or tabs (empty)
@@ -159,7 +236,7 @@ export class FileParser {
 
 			// check if current line count of \t(abs) is correct
 			// const realIndentLevel: number = this.countIndentation(line);
-			// if ((realIndentLevel != indent) && (realIndentLevel >= 1)) {
+			// if ((!this.ignoreLines(line)) && (realIndentLevel != correctIndent) && (realIndentLevel >= 1)) {
 			// 	structure.diagnostics.push({
 			// 		severity: DiagnosticSeverity.Hint,
 			// 		range: { start: { line: lineNumber, character: line.length },
@@ -199,5 +276,21 @@ export class FileParser {
 		}
 		return tabs
 	}
+	
+	stripComments(line: string): string {
+		const commentIndex = line.indexOf("#");
+		if (commentIndex !== -1) {
+			return line.substring(0, commentIndex).trim();
+		}
+		return line;
+	}
+
+	ignoreLines(line: string): boolean {
+		if (line.match(/RETURNING/i)) {
+			return true;
+		}
+		return false;
+	}
+
 }
 

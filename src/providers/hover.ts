@@ -7,8 +7,9 @@ import {
 	MarkupKind,
 } from 'vscode-languageserver/node';
 import { DocumentManager } from "../lib/documentManager";
-import { Logger } from "../logger";
+import { Logger } from "../utils/logger";
 import { FileStructure } from "../types/genero";
+import { findCurrentFunction } from "../utils/findCurrentFunction";
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -57,13 +58,13 @@ export class HoverProvider {
 	findDefinitionInFileStructure(word: string, structure: FileStructure, position: Position) {
 		if (!structure) return null;
 		const functionMatch = structure.functions.find(fn => fn.name === word);
-		const curFunc: string | null = this.findCurrentFunction(structure, position.line + 1);
+		const curFunc: string | null = findCurrentFunction(structure, position.line + 1);
 
 		if (functionMatch) {
 			return {
-			content: `**Function**: ${functionMatch.name}\n` +
-					`**Parameters**: ${functionMatch.parameters.map(p => `${p.name}: ${p.type}`).join(', ')}\n` +
-					`**Returns**: ${functionMatch.returns[0]?.type || 'void'}`
+			content: `**Function**: ${functionMatch.name}\n\n` +
+					`**Parameters**: \n${functionMatch.parameters.map(p => `- \`${p.name}\`: ${p.type}`).join('\n')}\n` +
+					`**Returns**: \n${functionMatch.returns.map(r => `- \`${r.name}\`: ${r.type}`).join('\n')}`
 			};
 		}
 
@@ -97,16 +98,5 @@ export class HoverProvider {
 		}
 
 		return null; // No match found
-	}
-
-	findCurrentFunction(structure: FileStructure, lineNumber: number) {
-		// Ensure the functions are sorted by startLine
-		structure.functions.sort((a, b) => a.startLine - b.startLine);
-
-		// Find the function that includes the lineNumber
-		const curFunc: FunctionDef | undefined = structure.functions.find(func => func.startLine <= lineNumber && func.endLine >= lineNumber);
-		if (!curFunc) return null;
-
-		return curFunc.name
 	}
 }

@@ -1,6 +1,6 @@
 import { FileStructure } from '../types/genero';
 import { FileParser } from './parser';
-import { Logger } from "../logger";
+import { Logger } from "../utils/logger";
 
 // logger
 const logger = Logger.getInstance("hd.log");

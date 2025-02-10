@@ -7,6 +7,7 @@ import {
 	TextDocumentSyncKind,
 	CompletionItemKind,
 	CompletionItem,
+	CompletionParams,
 	InitializeResult,
 	InitializeParams,
 	TextDocumentPositionParams,
@@ -19,7 +20,7 @@ import { CompletionProvider } from './providers/completion';
 import { DiagnosticsProvider } from './providers/diagnostics';
 import { CodeActionsProvider } from "./providers/codeActions";
 import { HoverProvider } from "./providers/hover";
-import { Logger } from "./logger";
+import { Logger } from "./utils/logger";
 
 // Create connection
 const connection = createConnection(ProposedFeatures.all);
@@ -72,7 +73,7 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
 			completionProvider: {
-				resolveProvider: true
+				resolveProvider: true,
 			},
 			hoverProvider: true,
 			documentFormattingProvider: true,
@@ -82,13 +83,15 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
 	};
 });
 
-connection.onCompletion(async(textDocumentPosition): Promise<CompletionItem[]> => {
+connection.onCompletion(async(params: CompletionParams): Promise<CompletionItem[]> => {
 	logger.log("In onCompletion()")
-	return completionProvider.provideCompletions(textDocumentPosition.textDocument.uri);
+	const doc = documents.get(params.textDocument.uri);
+	if (!doc) return [];
+	return completionProvider.provideCompletions(doc, params);
 });
 
 
-connection.onHover(async (params: TextDocumentPositionParams): Promise<Hover| null> => {
+connection.onHover(async (params: TextDocumentPositionParams): Promise<Hover | null> => {
 	const document = documents.get(params.textDocument.uri);
 	if (!document) return null;
 

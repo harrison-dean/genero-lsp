@@ -6,7 +6,7 @@ import {
 } from 'vscode-languageserver';
 
 import { DocumentManager } from "../lib/documentManager";
-import { Logger } from "../logger";
+import { Logger } from "../utils/logger";
 import { FileStructure } from "../types/genero";
 
 // logger

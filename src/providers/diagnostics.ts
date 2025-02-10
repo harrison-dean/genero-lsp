@@ -5,8 +5,8 @@ import {
 
 // import { Diagnostic} from "../types/genero";
 import { DocumentManager } from "../lib/documentManager";
-import { compileFile } from '../compileGeneroFile';
-import { Logger } from "../logger";
+import { compileFile } from '../utils/compileGeneroFile';
+import { Logger } from "../utils/logger";
 import { FileStructure } from "../types/genero";
 
 // logger

@@ -1,12 +1,16 @@
 import { 
 	CompletionItem,
 	CompletionItemKind,
+	CompletionParams,
 	MarkupKind,
+	Position,
+	TextDocument,
 } from 'vscode-languageserver';
 
 import { GeneroKeyword, FileStructure } from '../types/genero';
 import { DocumentManager } from '../lib/documentManager';
-import { Logger } from "../logger";
+import { Logger } from "../utils/logger";
+import { findCurrentFunction } from "../utils/findCurrentFunction";
 
 import fourGlKeywords from '../resources/4GLKeywords.json';
 import perKeywordsData from "../resources/PERKeywords.json";
@@ -22,19 +26,20 @@ const logger = Logger.getInstance("hd.log");
 export class CompletionProvider {
 	constructor(private documentManager: DocumentManager) {}
 
-	provideCompletions(uri: string): CompletionItem[] {
+	provideCompletions(doc: TextDocument, params: CompletionParams): CompletionItem[] {
 		logger.log("In provideCompletions()")
-		logger.log(uri)
+		const uri: string = params.textDocument.uri
 		const structure = this.documentManager.getStructure(uri);
 		if (!structure) return [];
 
-		
+		const contextCompletions: CompletionItem[] = this.getContextCompletions(doc, structure, params);
 
-		return [
-			...this.getKeywordCompletions(uri),
-			...this.getFunctionCompletions(structure),
-			...this.getVariableCompletions(structure)
-		];
+		// return [
+		// 	...this.getKeywordCompletions(uri),
+		// 	...this.getFunctionCompletions(structure),
+		// 	...this.getVariableCompletions(structure)
+		// ];
+		return contextCompletions;
 	}
 
 	private getKeywordCompletions(uri: string): CompletionItem[] {
@@ -57,7 +62,7 @@ export class CompletionProvider {
 		return keywordItems;
 	}
 
-	private getFunctionCompletions(structure: FileStructure): CompletionItem[] {
+	private getFunctionCompletions(structure: FileStructure, position: Position): CompletionItem[] {
 		return structure.functions.map(fn => ({
 			label: fn.name,
 			kind: CompletionItemKind.Function,
@@ -67,13 +72,15 @@ export class CompletionProvider {
 				value: [
 					`**Parameters:**`,
 					...fn.parameters.map(p => `- \`${p.name}\`: ${p.type}`),
-					`**Returns:** ${fn.returns[0]?.type || 'void'}`
+					// `**Returns:** ${fn.returns[0]?.type || 'void'}`
+					"**Returns:**",
+					...fn.returns.map(r => `- \`${r.name}\`: ${r.type}`),
 				].join('\n')
 			}
 		}));
 	}
 
-	private getVariableCompletions(structure: FileStructure): CompletionItem[] {
+	private getVariableCompletions(structure: FileStructure, position: Position): CompletionItem[] {
 		// Combine global and function-scoped variables using reduce
 		// const allVars = structure.functions.reduce<VariableDef[]>(
 		// 	(acc, fn) => acc.concat(fn.variables),
@@ -89,13 +96,15 @@ export class CompletionProvider {
 		// 	value: `**Scope:** ${v.scope}`
 		// 	}
 		// }));
-		return structure.variables.map(fn => ({
+		const curFunc: string | null = findCurrentFunction(structure, position.line);
+		logger.log("curFunc: " + curFunc);
+		return structure.variables.filter(variable => variable.scope === "modular" || variable.scope === curFunc).map(fn => ({
 			label: fn.name,
 			kind: CompletionItemKind.Variable,
-			detail: `Variable: ${fn.name} (${fn.type})`,
+			detail: `Variable: ${fn.name}`,
 			documentation: {
 				kind: MarkupKind.Markdown,
-				value: `**Scope:** ${fn.scope}`
+				value: `**Type:** ${fn.type}\n**Scope:** ${fn.scope}`
 			}
 		}))
 	}
@@ -120,4 +129,35 @@ export class CompletionProvider {
 	// 	}
 	// }));
 	// }
+
+	getContextCompletions(doc: TextDocument, structure: FileStructure, params: CompletionParams): CompletionItem[] {
+	let completions: CompletionItem[] = []
+	const position = params.position;
+	// Retrieve the text of the current line
+	const lineText = doc.getText({
+		start: { line: position.line, character: 0 },
+		end: { line: position.line, character:  Number.MAX_SAFE_INTEGER },
+	});
+	logger.log("lineText: " + lineText);
+
+
+	const keywords = this.getKeywordCompletions(doc.uri);
+	const functions = this.getFunctionCompletions(structure, position);
+	const variables = this.getVariableCompletions(structure, position);
+
+	// when to suggest keywords (always?)
+	completions = [...completions, ...keywords]
+
+	// when to suggest function names
+	if (lineText.includes("CALL") || lineText.includes("=")) {
+		completions = [...completions, ...functions]
+	}
+
+	// when to suggest variables
+	if (lineText.includes("LET") || lineText.includes("=") || lineText.includes("CALL") || lineText.includes("RETURNING")) {
+		completions = [...completions, ...variables]
+		
+	}
+	return completions;
+	}
 }
