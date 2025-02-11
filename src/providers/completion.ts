@@ -62,7 +62,7 @@ export class CompletionProvider {
 		return structure.functions.map(fn => ({
 			label: fn.name,
 			kind: CompletionItemKind.Function,
-			detail: `Function: ${fn.name}`,
+			// detail: `Function: ${fn.name}`,
 			documentation: {
 				kind: MarkupKind.Markdown,
 				value: [
@@ -81,11 +81,13 @@ export class CompletionProvider {
 		return structure.variables.filter(variable => variable.scope === "modular" || variable.scope === curFunc).map(fn => ({
 			label: fn.name,
 			kind: fn.name.includes(".") ? CompletionItemKind.Field : CompletionItemKind.Variable,
-			detail: `Variable: ${fn.name}`,
-			documentation: {
-				kind: MarkupKind.Markdown,
-				value: `**Type:** ${fn.type}\n**Scope:** ${fn.scope}`
-			}
+			// detail: `Variable: ${fn.name}`,
+			detail: `Type  : ${fn.type}\nScope : ${fn.scope}`,
+			// documentation: {
+			// 	kind: MarkupKind.Markdown,
+			// 	// value: `**Scope:** ${fn.scope}`,
+			// 	value: "",
+			// }
 		}))
 	}
 
@@ -124,7 +126,6 @@ export class CompletionProvider {
 		});
 		logger.log("lineText: " + lineText);
 
-
 		const keywords = this.getKeywordCompletions(doc.uri);
 		const functions = this.getFunctionCompletions(structure, position);
 		const variables = this.getVariableCompletions(structure, position);
@@ -134,7 +135,8 @@ export class CompletionProvider {
 
 		// when to suggest function names
 		if (lineText.includes("CALL") || 
-			lineText.includes("=")) {
+			lineText.includes("=")
+		){
 			completions = [...completions, ...functions]
 		}
 
@@ -146,12 +148,15 @@ export class CompletionProvider {
 			lineText.includes("DISPLAY") ||
 			lineText.includes("FROM") ||
 			lineText.includes("TO") || 
-			lineText.includes("INPUT")){
+			lineText.includes("INPUT") || 
+			lineText.includes("FOR") ||
+			lineText.includes("IF") ||
+			lineText.includes("CASE") ||
+			lineText.includes("INTO")
+		){
 			completions = [...completions, ...variables]
 			
 		}
 		return completions;
 	}
-
-
 }

@@ -56,8 +56,8 @@ export class FileParser {
 				currentFunction = null;
 				correctIndent--;
 			}
-			// Parse FUNCTION definitions
-			if (/^FUNCTION\s+/i.test(line)) {
+			// Parse FUNCTION/REPORT definitions
+			if (/^FUNCTION\s+/i.test(line) || /^REPORT\s/i.test(line)) {
 				let combined = commentlessLine;
 				let index = lineNumber;
 				while (!combined.includes(")") && index < lines.length) {
@@ -67,7 +67,8 @@ export class FileParser {
 				}
 				combined = combined.trim();
 				const functionRegex = /^FUNCTION\s+(\w+)\s*\(([\s\S]*?)\)/i;
-				const match = combined.match(functionRegex)
+				const reportRegex = /^REPORT\s+(\w+)\s*\(([\s\S]*?)\)/i;
+				let match = combined.match(functionRegex);
 				if (match) {
 					index++;
 					
@@ -80,6 +81,20 @@ export class FileParser {
 						endLine: -1
 					};
 					structure.functions.push(currentFunction);
+				} else {
+					match = combined.match(reportRegex);
+					if (match) {
+						index++;
+						currentFunction = {
+							name: match[1],
+							parameters: this.parseParameters(match[2]),
+							returns: [],
+							variables: [],
+							startLine: lineNumber,
+							endLine: -1
+						};
+						structure.functions.push(currentFunction);
+					}
 				}
 			}
 			
@@ -115,8 +130,8 @@ export class FileParser {
 				}
 			}
 
-			// Parse END FUNCTION
-			if (/^END\s+FUNCTION.*/i.test(line) && currentFunction) {
+			// Parse END FUNCTION/REPORT
+			if ((/^END\s+FUNCTION.*/i.test(line) || /^END\s+REPORT.*/i.test(line)) && currentFunction) {
 				correctIndent--;
 				currentFunction.endLine = lineNumber;
 			
@@ -169,7 +184,8 @@ export class FileParser {
 				// Parse record fields
 				let i = lineNumber + 1;
 				while (i < lines.length && !/END\s+RECORD/i.test(this.stripComments(lines[i]))) {
-					const fieldMatch = this.stripComments(lines[i]).match(/^\s*(\w+)\s+([\w.]+)/);
+					// const fieldMatch = this.stripComments(lines[i]).match(/^\s*(\w+)\s+([\w.]+)/);
+					const fieldMatch = this.stripComments(lines[i]).match(/^\s*(\w+)\s+((?:(?!,).)*)/i);
 					if (fieldMatch) {
 						logger.log("fieldMatch[1]: " + fieldMatch[1]);
 						logger.log("fieldMatch[2]: " + fieldMatch[2]);
