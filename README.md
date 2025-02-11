@@ -12,6 +12,7 @@ Features:
 
 To do:
 * Hover information for external functions
+* Sort code actions by closeness to current line
 * Incorrect indentation detection diagnostics + code action(s)
 * Implement get references (of variables)
 * Go to definition (local funcs/variables AND external funcs)

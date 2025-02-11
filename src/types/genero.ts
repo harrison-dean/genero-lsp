@@ -1,6 +1,5 @@
 import {
 	Diagnostic,
-	DiagnosticSeverity,
 } from 'vscode-languageserver/node';
 ///////////
 // types //

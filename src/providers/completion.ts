@@ -81,7 +81,8 @@ export class CompletionProvider {
 		logger.log("curFunc: " + curFunc);
 		return structure.variables.filter(variable => variable.scope === "modular" || variable.scope === curFunc).map(fn => ({
 			label: fn.name,
-			kind: CompletionItemKind.Variable,
+			kind: fn.name.includes(".") ? CompletionItemKind.Field : CompletionItemKind.Variable,
+			// kind: CompletionItemKind.Variable,
 			detail: `Variable: ${fn.name}`,
 			documentation: {
 				kind: MarkupKind.Markdown,
