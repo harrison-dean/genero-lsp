@@ -68,7 +68,6 @@ export class CompletionProvider {
 				value: [
 					`**Parameters:**`,
 					...fn.parameters.map(p => `- \`${p.name}\`: ${p.type}`),
-					// `**Returns:** ${fn.returns[0]?.type || 'void'}`
 					"**Returns:**",
 					...fn.returns.map(r => `- \`${r.name}\`: ${r.type}`),
 				].join('\n')
@@ -82,7 +81,6 @@ export class CompletionProvider {
 		return structure.variables.filter(variable => variable.scope === "modular" || variable.scope === curFunc).map(fn => ({
 			label: fn.name,
 			kind: fn.name.includes(".") ? CompletionItemKind.Field : CompletionItemKind.Variable,
-			// kind: CompletionItemKind.Variable,
 			detail: `Variable: ${fn.name}`,
 			documentation: {
 				kind: MarkupKind.Markdown,
@@ -135,12 +133,20 @@ export class CompletionProvider {
 		completions = [...completions, ...keywords]
 
 		// when to suggest function names
-		if (lineText.includes("CALL") || lineText.includes("=")) {
+		if (lineText.includes("CALL") || 
+			lineText.includes("=")) {
 			completions = [...completions, ...functions]
 		}
 
 		// when to suggest variables
-		if (lineText.includes("LET") || lineText.includes("=") || lineText.includes("CALL") || lineText.includes("RETURNING")) {
+		if (lineText.includes("LET") || 
+			lineText.includes("=") || 
+			lineText.includes("CALL") || 
+			lineText.includes("RETURN") ||
+			lineText.includes("DISPLAY") ||
+			lineText.includes("FROM") ||
+			lineText.includes("TO") || 
+			lineText.includes("INPUT")){
 			completions = [...completions, ...variables]
 			
 		}

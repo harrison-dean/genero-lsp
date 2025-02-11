@@ -16,3 +16,4 @@ To do:
 * Incorrect indentation detection diagnostics + code action(s)
 * Implement get references (of variables)
 * Go to definition (local funcs/variables AND external funcs)
+* Detect parameters as different to variables in completions
