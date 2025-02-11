@@ -1,9 +1,13 @@
 import {
-	Diagnostic,
 	DiagnosticSeverity,
 } from 'vscode-languageserver/node';
 
-import { FileStructure, FunctionDef, VariableDef } from '../types/genero';
+import { FileStructure, 
+	FunctionDef, 
+	RecordDef, 
+	VariableDef, 
+	Parameter 
+} from '../types/genero';
 import { Logger } from "../utils/logger";
 
 // logger
@@ -30,7 +34,6 @@ export class FileParser {
 
 		let correctIndent = 0;
 		lines.forEach((line, lineNumber) => {
-			// line = line.trim();
 			// store a version of this line stripped of comments for ease of parsing
 			const commentlessLine = this.stripComments(line);
 			logger.log("lineNumber=" + lineNumber + "\nline=" + line);
@@ -121,10 +124,6 @@ export class FileParser {
 				let cnt = 0
 				currentFunction.parameters.forEach((param) => {
 		
-					const allVariables = structure.functions.reduce<VariableDef[]>(
-						(acc, fn) => acc.concat(fn.variables),
-						[...structure.variables] // Start with global variables
-					);
 					if (currentFunction) {
 						const variableMatch = structure.variables.find(
 							v => currentFunction && (v.name === param.name && (v.scope === currentFunction.name))
@@ -143,7 +142,7 @@ export class FileParser {
 			const varMatch = line.trim().match(/^DEFINE\s+(\w+)\s+((?:(?!#).)*)/i);
 
 			if (varMatch) {
-				const variable = {
+				const variable: VariableDef = {
 					name: varMatch[1],
 					type: varMatch[2].trim(),
 					scope: currentFunction ? currentFunction.name : 'modular',
@@ -158,23 +157,32 @@ export class FileParser {
 			}
 
 			// Parse record definitions
-			const recordMatch = line.match(/^DEFINE\s+(\w+)\s+RECORD/i);
+			const recordMatch = line.match(/DEFINE\s+(\w+)\s+RECORD/i);
 			if (recordMatch) {
 				const record: RecordDef = {
 					name: recordMatch[1],
 					fields: [],
+					scope: currentFunction ? currentFunction.name : 'modular',
 					line: lineNumber
 				};
 
 				// Parse record fields
 				let i = lineNumber + 1;
-				while (i < lines.length && !/END\s+RECORD/i.test(lines[i])) {
-					const fieldMatch = lines[i].match(/^\s*(\w+)\s+([\w.]+)/);
+				while (i < lines.length && !/END\s+RECORD/i.test(this.stripComments(lines[i]))) {
+					const fieldMatch = this.stripComments(lines[i]).match(/^\s*(\w+)\s+([\w.]+)/);
 					if (fieldMatch) {
+						logger.log("fieldMatch[1]: " + fieldMatch[1]);
+						logger.log("fieldMatch[2]: " + fieldMatch[2]);
 						record.fields.push({
 							name: fieldMatch[1],
 							type: fieldMatch[2]
 						});
+						structure.variables.push({
+							name: recordMatch[1] + "." + fieldMatch[1],
+							type: fieldMatch[2],
+							scope: record.scope,
+							line: lineNumber
+						})
 					}
 					i++;
 				}

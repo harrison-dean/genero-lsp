@@ -8,7 +8,7 @@ import {
 } from 'vscode-languageserver/node';
 import { DocumentManager } from "../lib/documentManager";
 import { Logger } from "../utils/logger";
-import { FileStructure } from "../types/genero";
+import { FileStructure, VariableDef } from "../types/genero";
 import { findCurrentFunction } from "../utils/findCurrentFunction";
 
 // logger

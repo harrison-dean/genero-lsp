@@ -89,6 +89,7 @@ export interface VariableDef {
 export interface RecordDef {
 	name: string;
 	fields: RecordField[];
+	scope: 'modular' | string; // Function name or 'modular'
 	line: number;
 }
 
