@@ -3,7 +3,7 @@ import { Logger } from "./logger";
 // logger
 const logger = Logger.getInstance("hd.log");
 
-export function findCurrentFunction(structure: FileStructure, lineNumber: number) {
+export function findCurrentFunction(structure: FileStructure, lineNumber: number) : FunctionDef | null {
 	// Ensure the functions are sorted by startLine
 	structure.functions.sort((a, b) => a.startLine - b.startLine);
 
@@ -11,5 +11,5 @@ export function findCurrentFunction(structure: FileStructure, lineNumber: number
 	const curFunc: FunctionDef | undefined = structure.functions.find(func => func.startLine <= lineNumber && func.endLine >= lineNumber);
 	if (!curFunc) return null;
 
-	return curFunc.name;
+	return curFunc;
 }

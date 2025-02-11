@@ -12,6 +12,8 @@ import {
 	InitializeParams,
 	TextDocumentPositionParams,
 	Diagnostic,
+	Location,
+	ReferenceParams,
 } from 'vscode-languageserver/node';
 
 import { TextDocument, Position } from 'vscode-languageserver-textdocument';
@@ -20,6 +22,7 @@ import { CompletionProvider } from './providers/completion';
 import { DiagnosticsProvider } from './providers/diagnostics';
 import { CodeActionsProvider } from "./providers/codeActions";
 import { HoverProvider } from "./providers/hover";
+import { ReferenceProvider } from "./providers/references";
 import { Logger } from "./utils/logger";
 
 // Create connection
@@ -32,6 +35,7 @@ const completionProvider = new CompletionProvider(documentManager);
 const diagnosticsProvider = new DiagnosticsProvider(documentManager);
 const codeActionsProvider = new CodeActionsProvider(documentManager);
 const hoverProvider = new HoverProvider(documentManager);
+const referenceProvider = new ReferenceProvider(documentManager);
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -79,6 +83,7 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
 			documentFormattingProvider: true,
 			definitionProvider: true,
 			codeActionProvider: true,
+			referencesProvider: true,
 		}
 	};
 });
@@ -102,10 +107,18 @@ connection.onCodeAction((params) => {
 	const { textDocument, range, context } = params;
 	const doc = documents.get(textDocument.uri);
 	if (!doc) return [];
-	return codeActionsProvider.provideCodeActions(textDocument.uri);
 
+	return codeActionsProvider.provideCodeActions(textDocument.uri);
 });
 
+// handle find references requests
+connection.onReferences((params: ReferenceParams) => {
+	const doc = documents.get(params.textDocument.uri);
+	if (!doc) {
+	return [];
+	}
+	return referenceProvider.provideReferences(doc, params)
+});
 documents.listen(connection);
 // Start the server
 connection.listen();

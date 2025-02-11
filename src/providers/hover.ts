@@ -8,7 +8,7 @@ import {
 } from 'vscode-languageserver/node';
 import { DocumentManager } from "../lib/documentManager";
 import { Logger } from "../utils/logger";
-import { FileStructure, VariableDef } from "../types/genero";
+import { FileStructure, VariableDef, FunctionDef } from "../types/genero";
 import { findCurrentFunction } from "../utils/findCurrentFunction";
 
 // logger
@@ -58,7 +58,7 @@ export class HoverProvider {
 	findDefinitionInFileStructure(word: string, structure: FileStructure, position: Position) {
 		if (!structure) return null;
 		const functionMatch = structure.functions.find(fn => fn.name === word);
-		const curFunc: string | null = findCurrentFunction(structure, position.line + 1);
+		const curFunc: FunctionDef | null = findCurrentFunction(structure, position.line + 1);
 
 		if (functionMatch) {
 			return {
@@ -75,7 +75,7 @@ export class HoverProvider {
 		);
 		
 		// only search variables in this function or modular
-		const variableMatch = allVariables.find(v => v.name === word && (v.scope === curFunc || v.scope === "modular"));
+		const variableMatch = allVariables.find(v => v.name === word && (curFunc && v.scope === curFunc.name || v.scope === "modular"));
 		if (variableMatch) {
 			let scopeStr: string = `**Scope**: ${variableMatch.scope}`
 			if (variableMatch.scope === "modular") {

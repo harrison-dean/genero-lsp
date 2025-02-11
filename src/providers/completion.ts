@@ -7,7 +7,7 @@ import {
 	TextDocument,
 } from 'vscode-languageserver';
 
-import { GeneroKeyword, FileStructure } from '../types/genero';
+import { GeneroKeyword, FileStructure, FunctionDef } from '../types/genero';
 import { DocumentManager } from '../lib/documentManager';
 import { Logger } from "../utils/logger";
 import { findCurrentFunction } from "../utils/findCurrentFunction";
@@ -62,11 +62,10 @@ export class CompletionProvider {
 		return structure.functions.map(fn => ({
 			label: fn.name,
 			kind: CompletionItemKind.Function,
-			// detail: `Function: ${fn.name}`,
 			documentation: {
 				kind: MarkupKind.Markdown,
 				value: [
-					`**Parameters:**`,
+					`\`Parameters:**`,
 					...fn.parameters.map(p => `- \`${p.name}\`: ${p.type}`),
 					"**Returns:**",
 					...fn.returns.map(r => `- \`${r.name}\`: ${r.type}`),
@@ -76,18 +75,12 @@ export class CompletionProvider {
 	}
 
 	private getVariableCompletions(structure: FileStructure, position: Position): CompletionItem[] {
-		const curFunc: string | null = findCurrentFunction(structure, position.line);
+		const curFunc: FunctionDef | null = findCurrentFunction(structure, position.line);
 		logger.log("curFunc: " + curFunc);
-		return structure.variables.filter(variable => variable.scope === "modular" || variable.scope === curFunc).map(fn => ({
+		return structure.variables.filter(variable => variable.scope === "modular" || curFunc && variable.scope === curFunc.name).map(fn => ({
 			label: fn.name,
 			kind: fn.name.includes(".") ? CompletionItemKind.Field : CompletionItemKind.Variable,
-			// detail: `Variable: ${fn.name}`,
 			detail: `Type  : ${fn.type}\nScope : ${fn.scope}`,
-			// documentation: {
-			// 	kind: MarkupKind.Markdown,
-			// 	// value: `**Scope:** ${fn.scope}`,
-			// 	value: "",
-			// }
 		}))
 	}
 
@@ -95,13 +88,13 @@ export class CompletionProvider {
 	private getRecordFieldCompletions(structure: FileStructure, linePrefix: string, position: Position): CompletionItem[] | null{
 		logger.log("In getRecordFieldCompletions()")
 		// find what scope we are in
-		const curFunc: string | null = findCurrentFunction(structure, position.line);
+		const curFunc: FunctionDef | null = findCurrentFunction(structure, position.line);
 
 		// Extract record name before the dot
 		const recordName = getWordFromLineAtPosition(linePrefix, position.character);
 		logger.log("recordName: " + recordName);
 		
-		const record = structure.records.find(r => recordName && r.name === recordName && (r.scope === curFunc || r.scope === "modular"));
+		const record = structure.records.find(r => recordName && curFunc && r.name === recordName && (r.scope === curFunc.name || r.scope === "modular"));
 
 		if (!record) return null;
 

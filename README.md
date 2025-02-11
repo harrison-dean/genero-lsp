@@ -17,4 +17,4 @@ To do:
 * Implement get references (of variables)
 * Go to definition (local funcs/variables AND external funcs)
 * Detect parameters as different to variables in completions
-* Handle REPORTs in parser
+* Parse calls to functions
