@@ -24,7 +24,9 @@ import { DiagnosticsProvider } from './providers/diagnostics';
 import { CodeActionsProvider } from "./providers/codeActions";
 import { HoverProvider } from "./providers/hover";
 import { ReferenceProvider } from "./providers/references";
+import { DefinitionProvider } from "./providers/definition";
 import { Logger } from "./utils/logger";
+import { DefinitionParams } from 'vscode-languageserver-protocol';
 
 // Create connection
 const connection = createConnection(ProposedFeatures.all);
@@ -37,6 +39,7 @@ const diagnosticsProvider = new DiagnosticsProvider(documentManager);
 const codeActionsProvider = new CodeActionsProvider(documentManager);
 const hoverProvider = new HoverProvider(documentManager);
 const referenceProvider = new ReferenceProvider(documentManager);
+const definitionProvider = new DefinitionProvider(documentManager);
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -120,6 +123,15 @@ connection.onReferences((params: ReferenceParams) => {
 	}
 	return referenceProvider.provideReferences(doc, params)
 });
+
+connection.onDefinition((params: DefinitionParams) => {
+	const doc = documents.get(params.textDocument.uri);
+	if (!doc) {
+	return [];
+	}
+	return definitionProvider.provideDefinition(doc, params);
+});
+
 documents.listen(connection);
 // Start the server
 connection.listen();

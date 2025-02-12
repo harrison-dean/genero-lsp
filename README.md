@@ -18,3 +18,4 @@ To do:
 * Go to definition (local funcs/variables AND external funcs)
 * Detect parameters as different to variables in completions
 * Parse calls to functions
+* DRY code

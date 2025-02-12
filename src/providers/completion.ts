@@ -146,7 +146,11 @@ export class CompletionProvider {
 			lineText.includes("FOR") ||
 			lineText.includes("IF") ||
 			lineText.includes("CASE") ||
-			lineText.includes("INTO")
+			lineText.includes("INTO") ||
+			lineText.includes("FUNCTION") ||
+			lineText.includes("REPORT") ||
+			lineText.includes("RUN")
+			
 		){
 			completions = [...completions, ...variables]
 			
