@@ -1,5 +1,6 @@
 import { 
 	CodeAction, 
+	CodeActionParams, 
 	CodeActionKind, 
 	TextEdit, 
 	Range 
@@ -7,7 +8,7 @@ import {
 
 import { DocumentManager } from "../lib/documentManager";
 import { Logger } from "../utils/logger";
-import { FileStructure } from "../types/genero";
+import { FileStructure, CodeActionExtras } from "../types/genero";
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -15,28 +16,34 @@ const logger = Logger.getInstance("hd.log");
 export class CodeActionsProvider {
 	constructor(private documentManager: DocumentManager) {}
 
-	provideCodeActions(uri: string): CodeAction[] {
+	provideCodeActions(params: CodeActionParams): CodeAction[] {
 		logger.log("In provideCodeActions()")
-		logger.log(uri)
+		const uri: string = params.textDocument.uri;
 
 		const structure = this.documentManager.getStructure(uri);
 		if (!structure) return [];
-
-		return this.getCodeActions(structure, uri);
+		const curLine = params.range.start.line
+		return this.getCodeActions(structure, uri, curLine);
 	}
 
-	getCodeActions(structure: FileStructure, uri: string): CodeAction[] {
-		const codeActions: CodeAction[] = [];
+	getCodeActions(structure: FileStructure, uri: string, curLine: number): CodeAction[] {
+		let codeActions: CodeAction[] = [];
+		const codeActionsExtras: CodeActionExtras[] = [];
 		const diagnostics = structure.diagnostics;
 		diagnostics.forEach(diagnostic => {
+			// trim off "style/"		
 			if ((diagnostic.code === "style/trailing-whitespace") || 
 				(diagnostic.code === "style/empty-line")) {
-				
 				const action = this.createDelRangeAction(diagnostic.range, uri, diagnostic.code);
 				action.diagnostics = [diagnostic]; // Link the action to the diagnostic
-				codeActions.push(action);
+				const actionExtra = {line: diagnostic.range.start.line, action: action};
+				// codeActions.push(action);
+				codeActionsExtras.push(actionExtra);
 			}
 		});
+
+	// sort by line
+	codeActions = codeActionsExtras.sort((a,b) => Math.abs(a.line - curLine) - Math.abs(b.line - curLine)).map(a => a.action);
 
 	return codeActions;
 	}

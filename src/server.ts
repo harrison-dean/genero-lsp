@@ -14,6 +14,7 @@ import {
 	Diagnostic,
 	Location,
 	ReferenceParams,
+	CodeActionParams,
 } from 'vscode-languageserver/node';
 
 import { TextDocument, Position } from 'vscode-languageserver-textdocument';
@@ -103,12 +104,12 @@ connection.onHover(async (params: TextDocumentPositionParams): Promise<Hover | n
 	return hoverProvider.provideHover(document, params);
 })
 
-connection.onCodeAction((params) => {
+connection.onCodeAction((params: CodeActionParams) => {
 	const { textDocument, range, context } = params;
 	const doc = documents.get(textDocument.uri);
 	if (!doc) return [];
 
-	return codeActionsProvider.provideCodeActions(textDocument.uri);
+	return codeActionsProvider.provideCodeActions(params);
 });
 
 // handle find references requests

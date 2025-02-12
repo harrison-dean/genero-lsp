@@ -58,6 +58,7 @@ export class FileParser {
 			}
 			// Parse FUNCTION/REPORT definitions
 			if (/^FUNCTION\s+/i.test(line) || /^REPORT\s/i.test(line)) {
+				correctIndent++;
 				let combined = commentlessLine;
 				let index = lineNumber;
 				while (!combined.includes(")") && index < lines.length) {
@@ -70,7 +71,6 @@ export class FileParser {
 				const reportRegex = /^REPORT\s+(\w+)\s*\(([\s\S]*?)\)/i;
 				let match = combined.match(functionRegex);
 				if (match) {
-					index++;
 					
 					currentFunction = {
 						name: match[1],
@@ -131,7 +131,7 @@ export class FileParser {
 			}
 
 			// Parse END FUNCTION/REPORT
-			if ((/^END\s+FUNCTION.*/i.test(line) || /^END\s+REPORT.*/i.test(line)) && currentFunction) {
+			if ((/^END\s+FUNCTION/i.test(line) || /^END\s+REPORT/i.test(line)) && currentFunction) {
 				correctIndent--;
 				currentFunction.endLine = lineNumber;
 			
@@ -209,7 +209,6 @@ export class FileParser {
 			// Parse function calls
 			const callMatch = line.match(/^CALL\s+(\w+)/i);
 			if (callMatch) {
-				// correctIndent++;		// account for RETURNING on next line
 				structure.calls.push({
 					name: callMatch[1],
 					line: lineNumber
@@ -260,7 +259,7 @@ export class FileParser {
 
 			// check if current line count of \t(abs) is correct
 			// const realIndentLevel: number = this.countIndentation(line);
-			// if ((!this.ignoreLines(line)) && (realIndentLevel != correctIndent) && (realIndentLevel >= 1)) {
+			// if ((!this.ignoreLines(line)) && (realIndentLevel != correctIndent) && (realIndentLevel >= 0)) {
 			// 	structure.diagnostics.push({
 			// 		severity: DiagnosticSeverity.Hint,
 			// 		range: { start: { line: lineNumber, character: line.length },
@@ -310,7 +309,13 @@ export class FileParser {
 	}
 
 	ignoreLines(line: string): boolean {
-		if (line.match(/RETURNING/i)) {
+		if (line.includes("RETURNING")) {
+			return true;
+		}
+		if (line.includes("FUNCTION")) {
+			return true;
+		}
+		if (line.trim().length === 0) {
 			return true;
 		}
 		return false;

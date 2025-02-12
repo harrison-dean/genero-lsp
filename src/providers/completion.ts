@@ -77,6 +77,7 @@ export class CompletionProvider {
 	private getVariableCompletions(structure: FileStructure, position: Position): CompletionItem[] {
 		const curFunc: FunctionDef | null = findCurrentFunction(structure, position.line);
 		logger.log("curFunc: " + curFunc);
+
 		return structure.variables.filter(variable => variable.scope === "modular" || curFunc && variable.scope === curFunc.name).map(fn => ({
 			label: fn.name,
 			kind: fn.name.includes(".") ? CompletionItemKind.Field : CompletionItemKind.Variable,

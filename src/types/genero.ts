@@ -1,5 +1,6 @@
 import {
 	Diagnostic,
+	CodeAction,
 } from 'vscode-languageserver/node';
 ///////////
 // types //
@@ -110,4 +111,9 @@ export interface Parameter {
 export interface ReturnValue {
 	name: string;
 	type: string;
+}
+
+export interface CodeActionExtras {
+	line: number;
+	action: CodeAction
 }
