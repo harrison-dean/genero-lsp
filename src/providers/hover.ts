@@ -1,9 +1,9 @@
 
 import {
-	TextDocumentPositionParams,
 	TextDocument,
 	Position,
 	Hover,
+	HoverParams,
 	MarkupKind,
 } from 'vscode-languageserver/node';
 import { DocumentManager } from "../lib/documentManager";
@@ -17,7 +17,7 @@ const logger = Logger.getInstance("hd.log");
 export class HoverProvider {
 	constructor(private documentManager: DocumentManager) {}
 
-	async provideHover(doc: TextDocument, params: TextDocumentPositionParams) : Promise<Hover | null> {
+	async provideHover(doc: TextDocument, params: HoverParams) : Promise<Hover | null> {
 		const struct: FileStructure | undefined = this.documentManager.getStructure(params.textDocument.uri);
 		if (!struct) return null;
 		const word = this.getCurrentWord(doc, params.position);

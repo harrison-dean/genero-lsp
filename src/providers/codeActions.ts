@@ -42,7 +42,7 @@ export class CodeActionsProvider {
 			}
 		});
 
-	// sort by line
+	// sort by proximity to current line
 	codeActions = codeActionsExtras.sort((a,b) => Math.abs(a.line - curLine) - Math.abs(b.line - curLine)).map(a => a.action);
 
 	return codeActions;

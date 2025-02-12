@@ -1,19 +1,17 @@
 import {
-	CodeAction,
 	Hover,
+	HoverParams,
 	TextDocuments, 
 	createConnection, 
 	ProposedFeatures,
 	TextDocumentSyncKind,
-	CompletionItemKind,
 	CompletionItem,
 	CompletionParams,
 	InitializeResult,
 	InitializeParams,
-	TextDocumentPositionParams,
 	Diagnostic,
-	Location,
 	ReferenceParams,
+	ReferenceContext,
 	CodeActionParams,
 } from 'vscode-languageserver/node';
 
@@ -25,8 +23,9 @@ import { CodeActionsProvider } from "./providers/codeActions";
 import { HoverProvider } from "./providers/hover";
 import { ReferenceProvider } from "./providers/references";
 import { DefinitionProvider } from "./providers/definition";
+import { RenameProvider } from "./providers/rename";
 import { Logger } from "./utils/logger";
-import { DefinitionParams } from 'vscode-languageserver-protocol';
+import { DefinitionParams, RenameParams } from 'vscode-languageserver-protocol';
 
 // Create connection
 const connection = createConnection(ProposedFeatures.all);
@@ -40,6 +39,7 @@ const codeActionsProvider = new CodeActionsProvider(documentManager);
 const hoverProvider = new HoverProvider(documentManager);
 const referenceProvider = new ReferenceProvider(documentManager);
 const definitionProvider = new DefinitionProvider(documentManager);
+const renameProvider = new RenameProvider(documentManager);
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -86,6 +86,7 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
 			hoverProvider: true,
 			documentFormattingProvider: true,
 			definitionProvider: true,
+			renameProvider: true,
 			codeActionProvider: true,
 			referencesProvider: true,
 		}
@@ -100,7 +101,7 @@ connection.onCompletion(async(params: CompletionParams): Promise<CompletionItem[
 });
 
 
-connection.onHover(async (params: TextDocumentPositionParams): Promise<Hover | null> => {
+connection.onHover(async (params: HoverParams): Promise<Hover | null> => {
 	const document = documents.get(params.textDocument.uri);
 	if (!document) return null;
 
@@ -115,13 +116,12 @@ connection.onCodeAction((params: CodeActionParams) => {
 	return codeActionsProvider.provideCodeActions(params);
 });
 
-// handle find references requests
 connection.onReferences((params: ReferenceParams) => {
 	const doc = documents.get(params.textDocument.uri);
 	if (!doc) {
 	return [];
 	}
-	return referenceProvider.provideReferences(doc, params)
+	return 
 });
 
 connection.onDefinition((params: DefinitionParams) => {
@@ -130,6 +130,16 @@ connection.onDefinition((params: DefinitionParams) => {
 	return [];
 	}
 	return definitionProvider.provideDefinition(doc, params);
+});
+
+connection.onRenameRequest((params: RenameParams) => {
+	const doc = documents.get(params.textDocument.uri);
+	if (!doc) {
+		return null;
+	}
+	const references = referenceProvider.provideReferences(doc, {context: {includeDeclaration: true},position:params.position,textDocument:params.textDocument });
+	if (!references) return null;
+	return renameProvider.provideRename(doc, params, references);
 });
 
 documents.listen(connection);

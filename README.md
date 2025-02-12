@@ -19,3 +19,5 @@ To do:
 * Detect parameters as different to variables in completions
 * Parse calls to functions
 * DRY code
+* Parse and tokenize each line of code
+* Finish rename provider

@@ -1,7 +1,6 @@
 import {
 	DefinitionParams,
 	Location,
-	Position,
 	TextDocument,
 } from "vscode-languageserver-protocol";
 

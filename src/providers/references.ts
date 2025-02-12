@@ -1,7 +1,6 @@
 import {
 	ReferenceParams,
 	Location,
-	Position,
 	TextDocument,
 } from "vscode-languageserver-protocol";
 
@@ -18,6 +17,7 @@ export class ReferenceProvider {
 
 	provideReferences(doc: TextDocument, params: ReferenceParams): Location[] | null {
 		const locations: Location[] = [];
+// TODO : DRY +
 		const position = params.position;
 		const structure = this.documentManager.getStructure(doc.uri);
 		if (!structure) return null;
@@ -35,6 +35,7 @@ export class ReferenceProvider {
 		// look for modular variables matching current word - if found search full file
 		const varMatch: VariableDef | undefined = structure.variables.find(v => v.name === currentWord)
 		if (!varMatch) return null;
+// TODO : DRY -
 		
 		if (varMatch.scope === "modular") {
 			const fileLines = doc.getText().split("\n");
