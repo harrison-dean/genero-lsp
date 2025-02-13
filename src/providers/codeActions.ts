@@ -34,10 +34,17 @@ export class CodeActionsProvider {
 			// trim off "style/"		
 			if ((diagnostic.code === "style/trailing-whitespace") || 
 				(diagnostic.code === "style/empty-line")) {
-				const action = this.createDelRangeAction(diagnostic.range, uri, diagnostic.code);
+				const action = this.createDelRangeAction(uri, diagnostic.range, diagnostic.code);
 				action.diagnostics = [diagnostic]; // Link the action to the diagnostic
 				const actionExtra = {line: diagnostic.range.start.line, action: action};
 				// codeActions.push(action);
+				codeActionsExtras.push(actionExtra);
+			}
+			
+			if (diagnostic.code === "style/unspaced-comma") {
+				const action = this.createReplaceRangeAction(uri, diagnostic.range, diagnostic.code, ", ");
+				action.diagnostics = [diagnostic];
+				const actionExtra = {line: diagnostic.range.start.line, action: action};
 				codeActionsExtras.push(actionExtra);
 			}
 		});
@@ -48,18 +55,34 @@ export class CodeActionsProvider {
 	return codeActions;
 	}
 
-	createDelRangeAction(range: Range, documentUri: string, code: string): CodeAction {
+	createDelRangeAction(uri: string, range: Range, code: string): CodeAction {
 		return {
 			title: code,	// TODO: cut off "style/" prefix
 			kind: CodeActionKind.QuickFix,
 			diagnostics: [], // Will be populated later
 			edit: {
 				changes: {
-					[documentUri]: [
+					[uri]: [
 						TextEdit.del(range) // Delete the trailing whitespace
 					]
 				}
 			}
 		};
 	}
+	
+	createReplaceRangeAction(uri: string, range: Range, code: string, newStr: string): CodeAction {
+		return {
+			title: code,	// TODO: cut off "style/" prefix
+			kind: CodeActionKind.QuickFix,
+			diagnostics: [], // Will be populated later
+			edit: {
+				changes: {
+					[uri]: [
+						TextEdit.replace(range, newStr) // replace range with specified string
+					]
+				}
+			}
+		}
+	}
+
 }

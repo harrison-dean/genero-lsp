@@ -256,7 +256,25 @@ export class FileParser {
 
 				})
 			}
+			
+			// detect any occurrences of unspaced commas on the line
+			const unspacedCommasRegex = /,(?!\s)/g;
+			let match;
+			if (!commentlessLine.endsWith(",")) {
+				while ((match = unspacedCommasRegex.exec(commentlessLine)) !== null) {
+					structure.diagnostics.push({
+						severity: DiagnosticSeverity.Hint,
+						range: { start: { line: lineNumber, character: match.index},
+								end: { line: lineNumber, character: match.index+1}
+						},
+						message: "Unspaced comma",
+						source: "genero-lsp",
+						code: "style/unspaced-comma",
+					})
+				}
+			}
 
+			// TODO...
 			// check if current line count of \t(abs) is correct
 			// const realIndentLevel: number = this.countIndentation(line);
 			// if ((!this.ignoreLines(line)) && (realIndentLevel != correctIndent) && (realIndentLevel >= 0)) {
