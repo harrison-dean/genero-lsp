@@ -8,7 +8,7 @@ import { FunctionDef, FileStructure, VariableDef } from '../types/genero';
 import { DocumentManager } from '../lib/documentManager';
 import { Logger } from "../utils/logger";
 import { getWordFromLineAtPosition } from '../utils/getWordAtPosition';
-import { findCurrentFunction } from "../utils/findCurrentFunction";
+import { findCurrentFunction } from "../utils/findCurrent";
 
 // logger
 const logger = Logger.getInstance("hd.log");

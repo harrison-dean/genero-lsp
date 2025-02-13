@@ -9,8 +9,7 @@ import {
 import { FileStructure, VariableDef } from '../types/genero';
 import { DocumentManager } from '../lib/documentManager';
 import { Logger } from "../utils/logger";
-import { getWordFromLineAtPosition } from '../utils/getWordAtPosition';
-import { findCurrentFunction } from "../utils/findCurrentFunction";
+import { findCurrentFunction, findCurrentVar } from "../utils/findCurrent";
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -19,23 +18,10 @@ export class RenameProvider {
 
 
 	provideRename(doc: TextDocument, params: RenameParams, references: Location[]): WorkspaceEdit | null {
-// TODO : DRY +
-		const position = params.position;
 		const structure = this.documentManager.getStructure(doc.uri);
 		if (!structure) return null;
 
-		const lineText = doc.getText({
-			start: { line: position.line, character: 0 },
-			end: { line: position.line, character:  Number.MAX_SAFE_INTEGER },
-		});
-		const currentWord = getWordFromLineAtPosition(lineText, position.character);
-		logger.log("currentWord: " + currentWord)
-		if (!currentWord) return null;
-		const currentFunc = findCurrentFunction(structure, position.line);
-		if (!currentFunc) return null;
-		
-		// look for modular variables matching current word - if found search full file
-		const varMatch: VariableDef | undefined = structure.variables.find(v => v.name === currentWord)
+		const varMatch: VariableDef | null = findCurrentVar(doc, structure, params.position);
 		if (!varMatch) return null;
 		
 		const edits: TextEdit[] = [];
@@ -48,5 +34,4 @@ export class RenameProvider {
 		};
 		return workspaceEdit;
 	}
-// TODO : DRY -
 }

@@ -10,7 +10,7 @@ import {
 import { GeneroKeyword, FileStructure, FunctionDef } from '../types/genero';
 import { DocumentManager } from '../lib/documentManager';
 import { Logger } from "../utils/logger";
-import { findCurrentFunction } from "../utils/findCurrentFunction";
+import { findCurrentFunction } from "../utils/findCurrent";
 
 import fourGlKeywords from '../resources/4GLKeywords.json';
 import perKeywordsData from "../resources/PERKeywords.json";

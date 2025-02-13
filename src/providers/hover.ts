@@ -9,7 +9,7 @@ import {
 import { DocumentManager } from "../lib/documentManager";
 import { Logger } from "../utils/logger";
 import { FileStructure, VariableDef, FunctionDef } from "../types/genero";
-import { findCurrentFunction } from "../utils/findCurrentFunction";
+import { findCurrentFunction } from "../utils/findCurrent";
 
 // logger
 const logger = Logger.getInstance("hd.log");
