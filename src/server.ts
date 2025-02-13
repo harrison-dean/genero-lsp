@@ -121,7 +121,7 @@ connection.onReferences((params: ReferenceParams) => {
 	if (!doc) {
 	return [];
 	}
-	return 
+		return referenceProvider.provideReferences(doc, params);
 });
 
 connection.onDefinition((params: DefinitionParams) => {
