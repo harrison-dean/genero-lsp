@@ -4,10 +4,9 @@ import {
 	TextDocument,
 } from "vscode-languageserver-protocol";
 
-import { FileStructure, VariableDef, FunctionDef } from '../types/genero';
+import { VariableDef, FunctionDef } from '../types/genero';
 import { DocumentManager } from '../lib/documentManager';
 import { Logger } from "../utils/logger";
-import { getWordFromLineAtPosition } from '../utils/getWordAtPosition';
 import { findCurrentFunction, findCurrentVar } from "../utils/findCurrent";
 
 // logger
@@ -16,6 +15,7 @@ export class ReferenceProvider {
 	constructor(private documentManager: DocumentManager) {}
 
 	provideReferences(doc: TextDocument, params: ReferenceParams): Location[] | null {
+		logger.log("In provideReferences()")
 		const locations: Location[] = [];
 		const structure = this.documentManager.getStructure(doc.uri);
 		if (!structure) return null;

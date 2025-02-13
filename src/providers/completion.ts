@@ -14,7 +14,6 @@ import { findCurrentFunction } from "../utils/findCurrent";
 
 import fourGlKeywords from '../resources/4GLKeywords.json';
 import perKeywordsData from "../resources/PERKeywords.json";
-import { getWordFromLineAtPosition } from '../utils/getWordAtPosition';
 const perKeywords = perKeywordsData.keywords; // Extract nested array
 
 // logger
@@ -58,7 +57,7 @@ export class CompletionProvider {
 		return keywordItems;
 	}
 
-	private getFunctionCompletions(structure: FileStructure, position: Position): CompletionItem[] {
+	private getFunctionCompletions(structure: FileStructure): CompletionItem[] {
 		return structure.functions.map(fn => ({
 			label: fn.name,
 			kind: CompletionItemKind.Function,
@@ -85,31 +84,6 @@ export class CompletionProvider {
 		}))
 	}
 
-	// TODO: make work...
-	private getRecordFieldCompletions(structure: FileStructure, linePrefix: string, position: Position): CompletionItem[] | null{
-		logger.log("In getRecordFieldCompletions()")
-		// find what scope we are in
-		const curFunc: FunctionDef | null = findCurrentFunction(structure, position.line);
-
-		// Extract record name before the dot
-		const recordName = getWordFromLineAtPosition(linePrefix, position.character);
-		logger.log("recordName: " + recordName);
-		
-		const record = structure.records.find(r => recordName && curFunc && r.name === recordName && (r.scope === curFunc.name || r.scope === "modular"));
-
-		if (!record) return null;
-
-		return record.fields.map(field => ({
-			label: field.name,
-			kind: CompletionItemKind.Field,
-			detail: `Field: ${field.name} (${field.type})`,
-			documentation: {
-			kind: MarkupKind.Markdown,
-			value: `**Record:** ${record.name}`
-			}
-		}));
-	}
-
 	getContextCompletions(doc: TextDocument, structure: FileStructure, params: CompletionParams): CompletionItem[] {
 		let completions: CompletionItem[] = []
 		const position = params.position;
@@ -121,7 +95,7 @@ export class CompletionProvider {
 		logger.log("lineText: " + lineText);
 
 		const keywords = this.getKeywordCompletions(doc.uri);
-		const functions = this.getFunctionCompletions(structure, position);
+		const functions = this.getFunctionCompletions(structure);
 		const variables = this.getVariableCompletions(structure, position);
 
 		// when to suggest keywords (always?)

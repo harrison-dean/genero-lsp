@@ -4,7 +4,7 @@ import {
 	TextDocument,
 } from "vscode-languageserver-protocol";
 
-import { FunctionDef, FileStructure, VariableDef } from '../types/genero';
+import { FunctionDef, VariableDef } from '../types/genero';
 import { DocumentManager } from '../lib/documentManager';
 import { Logger } from "../utils/logger";
 import { getWordFromLineAtPosition } from '../utils/getWordAtPosition';

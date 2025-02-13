@@ -13,11 +13,9 @@ Features:
 
 To do:
 * Hover information for external functions
-* Sort code actions by closeness to current line
 * Incorrect indentation detection diagnostics + code action(s)
 * Go to definition (local funcs/variables AND external funcs)
 * Detect parameters as different to variables in completions
 * Parse calls to functions
-* DRY code
 * Parse and tokenize each line of code
-* Finish rename provider
+* Provide code actions based on compiler output

@@ -6,10 +6,10 @@ import {
 	TextEdit,
 } from "vscode-languageserver";
 
-import { FileStructure, VariableDef } from '../types/genero';
+import { VariableDef } from '../types/genero';
 import { DocumentManager } from '../lib/documentManager';
 import { Logger } from "../utils/logger";
-import { findCurrentFunction, findCurrentVar } from "../utils/findCurrent";
+import { findCurrentVar } from "../utils/findCurrent";
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -18,6 +18,7 @@ export class RenameProvider {
 
 
 	provideRename(doc: TextDocument, params: RenameParams, references: Location[]): WorkspaceEdit | null {
+		logger.log("In provideRename");
 		const structure = this.documentManager.getStructure(doc.uri);
 		if (!structure) return null;
 
