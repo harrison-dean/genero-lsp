@@ -133,12 +133,17 @@ connection.onDefinition((params: DefinitionParams) => {
 });
 
 connection.onRenameRequest((params: RenameParams) => {
+	logger.log("onRenameRequest()")
+	logger.log("params position line " + params.position.line)
+	logger.log("params position char " + params.position.character)
 	const doc = documents.get(params.textDocument.uri);
 	if (!doc) {
 		return null;
 	}
-	const references = referenceProvider.provideReferences(doc, {context: {includeDeclaration: true},position:params.position,textDocument:params.textDocument });
+	const refParams: ReferenceParams = {textDocument: params.textDocument, context: {includeDeclaration: true}, position:{line: params.position.line, character: params.position.character}};
+	const references = referenceProvider.provideReferences(doc, refParams);
 	if (!references) return null;
+	logger.log("Found references");
 	return renameProvider.provideRename(doc, params, references);
 });
 

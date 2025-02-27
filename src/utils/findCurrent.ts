@@ -29,6 +29,7 @@ export function findCurrentVar(doc: TextDocument, structure: FileStructure, posi
 		start: { line: position.line, character: 0 },
 		end: { line: position.line, character:  Number.MAX_SAFE_INTEGER },
 	});
+	logger.log("lineText: " + lineText);
 
 	const currentWord = getWordFromLineAtPosition(lineText, position.character);
 	if (!currentWord) return null;

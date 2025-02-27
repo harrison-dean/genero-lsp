@@ -42,6 +42,9 @@ export class CodeActionsProvider {
 			}
 			
 			if (diagnostic.code === "style/unspaced-comma") {
+				// if (codeActionsExtras.find((ca => ca.line = diagnostic.range.start.line))) {
+				//
+				// }
 				const action = this.createReplaceRangeAction(uri, diagnostic.range, diagnostic.code, ", ");
 				action.diagnostics = [diagnostic];
 				const actionExtra = {line: diagnostic.range.start.line, action: action};
@@ -49,10 +52,10 @@ export class CodeActionsProvider {
 			}
 		});
 
-	// sort by proximity to current line
-	codeActions = codeActionsExtras.sort((a,b) => Math.abs(a.line - curLine) - Math.abs(b.line - curLine)).map(a => a.action);
+		// sort by proximity to current line
+		codeActions = codeActionsExtras.sort((a,b) => Math.abs(a.line - curLine) - Math.abs(b.line - curLine)).map(a => a.action);
 
-	return codeActions;
+		return codeActions;
 	}
 
 	createDelRangeAction(uri: string, range: Range, code: string): CodeAction {

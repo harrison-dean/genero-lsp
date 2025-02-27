@@ -6,10 +6,8 @@ import {
 	TextEdit,
 } from "vscode-languageserver";
 
-import { VariableDef } from '../types/genero';
 import { DocumentManager } from '../lib/documentManager';
 import { Logger } from "../utils/logger";
-import { findCurrentVar } from "../utils/findCurrent";
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -21,18 +19,22 @@ export class RenameProvider {
 		logger.log("In provideRename");
 		const structure = this.documentManager.getStructure(doc.uri);
 		if (!structure) return null;
-
-		const varMatch: VariableDef | null = findCurrentVar(doc, structure, params.position);
-		if (!varMatch) return null;
+		logger.log("Found structure")
 		
+		let foundEdits: boolean = false;
 		const edits: TextEdit[] = [];
-
 		references.forEach((location: Location) => {
+			if (!foundEdits) {
+				foundEdits = true;
+			}
+			logger.log("Reference: " + location.range);
 			edits.push(TextEdit.replace(location.range, params.newName));
 		});
 		let workspaceEdit: WorkspaceEdit = {
 			changes: {[doc.uri]: edits}
 		};
+		if (!foundEdits) return null;
+		logger.log("Found edits")
 		return workspaceEdit;
 	}
 }

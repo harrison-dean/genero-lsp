@@ -14,8 +14,11 @@ Features:
 To do:
 * Hover information for external functions
 * Incorrect indentation detection diagnostics + code action(s)
-* Go to definition (local funcs/variables AND external funcs)
+* Go to definition (~~local funcs/variables~~ AND external funcs)
 * Detect parameters as different to variables in completions
-* Parse calls to functions
 * Parse and tokenize each line of code
 * Provide code actions based on compiler output
+* Snippets
+* Detect any unspaced operators from json
+* Fix rename
+* Live diagnostics via compiling "swap" file

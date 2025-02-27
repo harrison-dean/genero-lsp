@@ -34,7 +34,9 @@ export class CompletionProvider {
 
 		const contextCompletions: CompletionItem[] = this.getContextCompletions(doc, structure, params);
 
-		return contextCompletions;
+		const snippetCompletions: CompletionItem[] = this.getSnippetCompletions();
+
+		return [...contextCompletions, ...snippetCompletions];
 	}
 
 	private getKeywordCompletions(uri: string): CompletionItem[] {
@@ -64,7 +66,7 @@ export class CompletionProvider {
 			documentation: {
 				kind: MarkupKind.Markdown,
 				value: [
-					`\`Parameters:**`,
+					`\`Parameters:\``,
 					...fn.parameters.map(p => `- \`${p.name}\`: ${p.type}`),
 					"**Returns:**",
 					...fn.returns.map(r => `- \`${r.name}\`: ${r.type}`),
@@ -130,5 +132,15 @@ export class CompletionProvider {
 			
 		}
 		return completions;
+	}
+
+	getSnippetCompletions(): CompletionItem[] {
+		const ifSnippet: CompletionItem = {
+			label: "if-statement",
+			kind: CompletionItemKind.Snippet,
+			detail: "Basic if statement",
+			insertText: "IF  THEN\n\t# block\nEND IF"
+		}
+		return [ifSnippet]
 	}
 }

@@ -16,14 +16,24 @@ export class ReferenceProvider {
 
 	provideReferences(doc: TextDocument, params: ReferenceParams): Location[] | null {
 		logger.log("In provideReferences()")
+		logger.log("params uri:" + params.textDocument.uri)
+		logger.log("params line:" + params.position.line)
+		logger.log("params char:" + params.position.character)
+		logger.log("params context:" + params.context.includeDeclaration)
 		const locations: Location[] = [];
 		const structure = this.documentManager.getStructure(doc.uri);
 		if (!structure) return null;
 
 		const varMatch: VariableDef | null = findCurrentVar(doc, structure, params.position);
+		if (varMatch) {
+			logger.log("varMatch name:" + varMatch.name);
+		}
 		// if (!varMatch) return null;
 	
 		const currentFunc: FunctionDef | null = findCurrentFunction(structure, params.position.line)
+		if (currentFunc) {
+			logger.log("currentFunc: " + currentFunc.name);
+		}
 
 		let offset: number;
 		let lines = null;
@@ -53,6 +63,12 @@ export class ReferenceProvider {
 				}
 			})
 		}
+		
+		locations.forEach((location: Location) => {
+			logger.log("Location start: " + location.range.start.line + " " + location.range.start.character)
+			logger.log("Location end: " + location.range.end.line + " " + location.range.end.character)
+		})
+
 		return locations;
 	}
 }

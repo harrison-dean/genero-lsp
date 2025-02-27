@@ -9,6 +9,7 @@ import { FileStructure,
 	Parameter 
 } from '../types/genero';
 import { Logger } from "../utils/logger";
+import { compileSchema } from '../utils/schemaLoader';
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -39,7 +40,7 @@ export class FileParser {
 			logger.log("lineNumber=" + lineNumber + "\nline=" + line);
 			
 			// increase indent in MAIN
-			if (line.match(/^MAIN/i)) {
+			if (commentlessLine.match(/^MAIN/i)) {
 				currentFunction = {
 					name: "MAIN",
 					parameters: [],
@@ -49,16 +50,16 @@ export class FileParser {
 					endLine: -1
 				};
 				structure.functions.push(currentFunction);
-				correctIndent++;
+				correctIndent = 1;
 			}
-			if (line.match(/^END MAIN/i) && currentFunction) {
+			if (commentlessLine.match(/^END MAIN/i) && currentFunction) {
 				currentFunction.endLine = lineNumber;
 				currentFunction = null;
-				correctIndent--;
+				// correctIndent--;
 			}
 			// Parse FUNCTION/REPORT definitions
-			if (/^FUNCTION\s+/i.test(line) || /^REPORT\s/i.test(line)) {
-				correctIndent++;
+			if (/^FUNCTION\s+/i.test(commentlessLine) || /^REPORT\s/i.test(commentlessLine)) {
+				correctIndent = 1;
 				let combined = commentlessLine;
 				let index = lineNumber;
 				while (!combined.includes(")") && index < lines.length) {
@@ -131,8 +132,8 @@ export class FileParser {
 			}
 
 			// Parse END FUNCTION/REPORT
-			if ((/^END\s+FUNCTION/i.test(line) || /^END\s+REPORT/i.test(line)) && currentFunction) {
-				correctIndent--;
+			if ((/^END\s+FUNCTION/i.test(commentlessLine) || /^END\s+REPORT/i.test(commentlessLine)) && currentFunction) {
+				// correctIndent--;
 				currentFunction.endLine = lineNumber;
 			
 				// resolve parameter types from function.variables
@@ -154,7 +155,7 @@ export class FileParser {
 			}
 
 			// Parse variable definitions
-			const varMatch = line.trim().match(/^DEFINE\s+(\w+)\s+((?:(?!#).)*)/i);
+			const varMatch = commentlessLine.trim().match(/^DEFINE\s+(\w+)\s+((?:(?!#).)*)/i);
 
 			if (varMatch) {
 				const variable: VariableDef = {
@@ -172,7 +173,7 @@ export class FileParser {
 			}
 
 			// Parse record definitions
-			const recordMatch = line.match(/DEFINE\s+(\w+)\s+RECORD/i);
+			const recordMatch = commentlessLine.match(/DEFINE\s+(\w+)\s+RECORD/i);
 			if (recordMatch) {
 				const record: RecordDef = {
 					name: recordMatch[1],
@@ -207,7 +208,7 @@ export class FileParser {
 			}
 
 			// Parse function calls
-			const callMatch = line.match(/^CALL\s+(\w+)/i);
+			const callMatch = commentlessLine.match(/^CALL\s+(\w+)/i);
 			if (callMatch) {
 				structure.calls.push({
 					name: callMatch[1],
@@ -216,17 +217,21 @@ export class FileParser {
 			}
 
 			// parse THEN statements for indent levels
-			const ifMatch = line.match(/^\s*IF\s*.*THEN\s*$/i);
-			const endIfMatch = line.match(/^\s*END IF/i);
+			const ifMatch = commentlessLine.match(/^\s*IF\s*.*THEN\s*$/i);
+			const endMatch = commentlessLine.match(/^\s*END/i);
 			if (ifMatch) {
 				correctIndent++;
 				// return;
 			}
-			if (endIfMatch) {
+			const whileMatch = commentlessLine.match(/^\s*WHILE\s*/i);
+			if (whileMatch) {
+				correctIndent++;
+			}
+			if (endMatch) {
 				correctIndent--;
 			}
 
-			// check if line is all spaces or tabs (empty)
+			// check if line (including comments!) is all spaces or tabs (empty)
 			const emptyLineRegex = /^[ \t]+$/
 			const isEmptyLine = line.match(emptyLineRegex);
       		if (isEmptyLine) {
@@ -276,8 +281,8 @@ export class FileParser {
 
 			// TODO...
 			// check if current line count of \t(abs) is correct
-			// const realIndentLevel: number = this.countIndentation(line);
-			// if ((!this.ignoreLines(line)) && (realIndentLevel != correctIndent) && (realIndentLevel >= 0)) {
+			const realIndentLevel: number = this.countIndentation(line);
+			// if (currentFunction && !this.ignoreLines(line) && realIndentLevel != correctIndent) {
 			// 	structure.diagnostics.push({
 			// 		severity: DiagnosticSeverity.Hint,
 			// 		range: { start: { line: lineNumber, character: line.length },
