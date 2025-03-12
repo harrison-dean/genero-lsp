@@ -3,7 +3,8 @@ import {
 	CodeActionParams, 
 	CodeActionKind, 
 	TextEdit, 
-	Range 
+	Range, 
+    Diagnostic
 } from 'vscode-languageserver';
 
 import { DocumentManager } from "../lib/documentManager";
@@ -16,21 +17,22 @@ const logger = Logger.getInstance("hd.log");
 export class CodeActionsProvider {
 	constructor(private documentManager: DocumentManager) {}
 
-	provideCodeActions(params: CodeActionParams): CodeAction[] {
+	provideCodeActions(params: CodeActionParams, diagnostics: Diagnostic[]): CodeAction[] {
 		logger.log("In provideCodeActions()")
 		const uri: string = params.textDocument.uri;
 
 		const structure = this.documentManager.getStructure(uri);
 		if (!structure) return [];
 		const curLine = params.range.start.line
-		return this.getCodeActions(structure, uri, curLine);
+		return this.getCodeActions(structure, uri, curLine, diagnostics);
 	}
 
-	getCodeActions(structure: FileStructure, uri: string, curLine: number): CodeAction[] {
+	getCodeActions(structure: FileStructure, uri: string, curLine: number, diagnostics: Diagnostic[]): CodeAction[] {
 		let codeActions: CodeAction[] = [];
 		const codeActionsExtras: CodeActionExtras[] = [];
-		const diagnostics = structure.diagnostics;
+		diagnostics = [...diagnostics, ...structure.diagnostics];
 		diagnostics.forEach(diagnostic => {
+			logger.log("diagnostic: " + diagnostic.code);
 			// trim off "style/"		
 			if ((diagnostic.code === "style/trailing-whitespace") || 
 				(diagnostic.code === "style/empty-line")) {
@@ -50,12 +52,27 @@ export class CodeActionsProvider {
 				const actionExtra = {line: diagnostic.range.start.line, action: action};
 				codeActionsExtras.push(actionExtra);
 			}
+			// create code action for unused var
+			if (diagnostic.code === -6615) {
+				const action = this.createDelRangeAction(uri, {start: {line:diagnostic.range.start.line, character:0}, end: {line:diagnostic.range.start.line+1, character: 0}}, "comp/unused-var");
+				action.diagnostics = [diagnostic];
+				const actionExtra = {line: diagnostic.range.start.line, action: action};
+				codeActionsExtras.push(actionExtra);
+			}
+			//TODO: grammatical error at token
+			if (diagnostic.code === -6609) {
+				// this.createExpectedActions(diagnostic);
+			}
 		});
 
 		// sort by proximity to current line
 		codeActions = codeActionsExtras.sort((a,b) => Math.abs(a.line - curLine) - Math.abs(b.line - curLine)).map(a => a.action);
 
 		return codeActions;
+	}
+
+	createExpectedActions(diagnostic: Diagnostic) {
+		
 	}
 
 	createDelRangeAction(uri: string, range: Range, code: string): CodeAction {

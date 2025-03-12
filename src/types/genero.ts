@@ -77,6 +77,12 @@ export interface FunctionDef {
 	variables: VariableDef[];
 	startLine: number;
 	endLine: number;
+	references: Reference[];
+}
+
+export interface Reference {
+	variable: VariableDef,
+	location: Location[]
 }
 
 export interface VariableDef {

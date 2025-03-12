@@ -108,27 +108,24 @@ connection.onHover(async (params: HoverParams): Promise<Hover | null> => {
 	return hoverProvider.provideHover(document, params);
 })
 
-connection.onCodeAction((params: CodeActionParams) => {
+connection.onCodeAction(async(params: CodeActionParams) => {
 	const { textDocument, range, context } = params;
 	const doc = documents.get(textDocument.uri);
 	if (!doc) return [];
 
-	return codeActionsProvider.provideCodeActions(params);
+	const diagnostic: Diagnostic[] = await diagnosticsProvider.provideDiagnostics(doc.uri);
+	return codeActionsProvider.provideCodeActions(params, diagnostic);
 });
 
 connection.onReferences((params: ReferenceParams) => {
 	const doc = documents.get(params.textDocument.uri);
-	if (!doc) {
-	return [];
-	}
-		return referenceProvider.provideReferences(doc, params);
+	if (!doc) return [];
+	return referenceProvider.provideReferences(doc, params);
 });
 
 connection.onDefinition((params: DefinitionParams) => {
 	const doc = documents.get(params.textDocument.uri);
-	if (!doc) {
-	return [];
-	}
+	if (!doc) return [];
 	return definitionProvider.provideDefinition(doc, params);
 });
 
@@ -137,9 +134,8 @@ connection.onRenameRequest((params: RenameParams) => {
 	logger.log("params position line " + params.position.line)
 	logger.log("params position char " + params.position.character)
 	const doc = documents.get(params.textDocument.uri);
-	if (!doc) {
-		return null;
-	}
+	if (!doc) return null;
+
 	const refParams: ReferenceParams = {textDocument: params.textDocument, context: {includeDeclaration: true}, position:{line: params.position.line, character: params.position.character}};
 	const references = referenceProvider.provideReferences(doc, refParams);
 	if (!references) return null;

@@ -28,7 +28,7 @@ export class FileParser {
 			variables: [],
 			records: [],
 			calls: [],
-			diagnostics: []
+			diagnostics: [],
 		};
 
 		let currentFunction: FunctionDef | null = null;
@@ -47,7 +47,8 @@ export class FileParser {
 					returns: [],
 					variables: [],
 					startLine: lineNumber,
-					endLine: -1
+					endLine: -1,
+					references: [],
 				};
 				structure.functions.push(currentFunction);
 				correctIndent = 1;
@@ -79,7 +80,8 @@ export class FileParser {
 						returns: [],
 						variables: [],
 						startLine: lineNumber,
-						endLine: -1
+						endLine: -1,
+						references: [],
 					};
 					structure.functions.push(currentFunction);
 				} else {
@@ -92,7 +94,8 @@ export class FileParser {
 							returns: [],
 							variables: [],
 							startLine: lineNumber,
-							endLine: -1
+							endLine: -1, 
+							references: [],
 						};
 						structure.functions.push(currentFunction);
 					}
@@ -150,7 +153,6 @@ export class FileParser {
 					}
 					cnt++;
 				});
-
 				currentFunction = null;
 			}
 

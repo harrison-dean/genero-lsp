@@ -20,5 +20,4 @@ To do:
 * Provide code actions based on compiler output
 * Snippets
 * Detect any unspaced operators from json
-* Fix rename
 * Live diagnostics via compiling "swap" file

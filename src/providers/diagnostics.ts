@@ -57,7 +57,7 @@ export class DiagnosticsProvider {
 						end: { line: parseInt(match[4],10) - 1, character: parseInt(match[5],10) }
 					},
 					severity: match[6] === 'warning' ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error,
-					code: match[7],
+					code: parseInt(match[7]),
 					source: 'fglcomp',
 					message: match[8],
 				})
