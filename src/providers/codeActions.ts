@@ -10,6 +10,7 @@ import {
 import { DocumentManager } from "../lib/documentManager";
 import { Logger } from "../utils/logger";
 import { FileStructure, CodeActionExtras } from "../types/genero";
+import { findClosestMatch } from "../utils/levenshtein";
 
 // logger
 const logger = Logger.getInstance("hd.log");
@@ -54,13 +55,28 @@ export class CodeActionsProvider {
 			}
 			// create code action for unused var
 			if (diagnostic.code === -6615) {
-				const action = this.createDelRangeAction(uri, {start: {line:diagnostic.range.start.line, character:0}, end: {line:diagnostic.range.start.line+1, character: 0}}, "comp/unused-var");
+				const action = this.createDelRangeAction(uri, {start: {line:diagnostic.range.start.line, character:0}, end: {line:diagnostic.range.start.line+1, character: 0}}, "fglcomp/unused-var");
 				action.diagnostics = [diagnostic];
 				const actionExtra = {line: diagnostic.range.start.line, action: action};
 				codeActionsExtras.push(actionExtra);
 			}
-			//TODO: grammatical error at token
+			// grammatical error at token
 			if (diagnostic.code === -6609) {
+				logger.log("diagnostic.message=" + diagnostic.message);
+				// find actual token
+				const seenToken = this.extractSeenWord(diagnostic.message);
+				if (seenToken) {
+					logger.log("seenToken=" + seenToken);
+					const wordList = diagnostic.message.split(":")[1];
+					const closestMatch = findClosestMatch(seenToken, wordList);
+					// find closest match to seen/actual token
+					if (closestMatch) {
+						const action = this.createReplaceRangeAction(uri, diagnostic.range, "fglcomp/token-grammar", closestMatch);
+						action.diagnostics = [diagnostic];
+						const actionExtra = {line: diagnostic.range.start.line, action: action};
+						codeActionsExtras.push(actionExtra);
+					}
+				}
 				// this.createExpectedActions(diagnostic);
 			}
 		});
@@ -70,14 +86,17 @@ export class CodeActionsProvider {
 
 		return codeActions;
 	}
-
+	extractSeenWord(input: string): string | null {
+		const match = input.match(/found at\s+'([^']+)'/);
+		return match ? match[1] : null;
+	}
 	createExpectedActions(diagnostic: Diagnostic) {
 		
 	}
 
 	createDelRangeAction(uri: string, range: Range, code: string): CodeAction {
 		return {
-			title: code,	// TODO: cut off "style/" prefix
+			title: code,
 			kind: CodeActionKind.QuickFix,
 			diagnostics: [], // Will be populated later
 			edit: {
