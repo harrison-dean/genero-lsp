@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export class Logger {
-	private doLog: boolean = true;
+	private doLog: boolean = false;
     private static instance: Logger;
     private logFilePath: string;
 

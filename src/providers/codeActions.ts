@@ -31,7 +31,7 @@ export class CodeActionsProvider {
 	getCodeActions(structure: FileStructure, uri: string, curLine: number, diagnostics: Diagnostic[]): CodeAction[] {
 		let codeActions: CodeAction[] = [];
 		const codeActionsExtras: CodeActionExtras[] = [];
-		diagnostics = [...diagnostics, ...structure.diagnostics];
+		// diagnostics = [...diagnostics, ...structure.diagnostics];
 		diagnostics.forEach(diagnostic => {
 			logger.log("diagnostic: " + diagnostic.code);
 			// trim off "style/"		
